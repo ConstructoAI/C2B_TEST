@@ -1165,6 +1165,9 @@ def generate_html_for_pdf():
     """Génère un HTML formaté pour conversion en PDF"""
     data = st.session_state.soumission_data
     
+    # Récupérer les informations de l'entreprise
+    company = get_company_info()
+    
     # Calculer les totaux pour affichage
     total_travaux = sum(
         item.get('montant', 0) 
@@ -1353,7 +1356,7 @@ def generate_html_for_pdf():
     <body>
         <div class="header">
             <h1>SOUMISSION BUDGÉTAIRE</h1>
-            <h2>{company['name']}</h2>
+            <h2>""" + company['name'] + """</h2>
             <p>Numéro: """ + data['numero'] + """ | Date: """ + data['date'] + """</p>
         </div>
         
@@ -1505,11 +1508,11 @@ def generate_html_for_pdf():
     html += f"""
         <div class="footer">
             <div class="company-info">
-                <strong>{company['name']}</strong><br>
-                {company['address']}, {company['city']}<br>
-                Tél: {company['phone']}<br>
-                {company['email']}<br>
-                RBQ: {company['rbq']} | NEQ: {company['neq']}
+                <strong>""" + company['name'] + """</strong><br>
+                """ + company['address'] + """, """ + company['city'] + """<br>
+                Tél: """ + company['phone'] + """<br>
+                """ + company['email'] + """<br>
+                RBQ: """ + company['rbq'] + """ | NEQ: """ + company['neq'] + """
             </div>
             <p style="margin-top: 20px;">
                 Cette soumission est valide pour 30 jours à partir de la date d'émission.<br>

@@ -4,6 +4,10 @@ Script de test pour le module de configuration d'entreprise
 
 import sys
 import os
+import io
+
+# Configurer l'encodage UTF-8 pour Windows
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 # Ajouter le chemin au sys.path si nécessaire
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
