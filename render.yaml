@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: gestionnaire-soumissions
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: STREAMLIT_SERVER_HEADLESS
+        value: true
+      - key: STREAMLIT_SERVER_ENABLE_CORS
+        value: false
+      - key: ADMIN_PASSWORD
+        value: admin2025
+    healthCheckPath: /
+    autoDeploy: true
