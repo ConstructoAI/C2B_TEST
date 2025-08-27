@@ -1596,8 +1596,17 @@ def delete_submission(submission_id, is_heritage=False):
 
 def show_admin_dashboard():
     """Dashboard administrateur multi-format"""
-    # Titre principal
-    st.title("🏗️ C2B Construction - Gestion Complète")
+    # Import du module de configuration d'entreprise
+    try:
+        from entreprise_config import show_entreprise_config, get_entreprise_config
+        has_entreprise_config = True
+        company_name = get_entreprise_config().get('nom', 'C2B Construction')
+    except ImportError:
+        has_entreprise_config = False
+        company_name = 'C2B Construction'
+    
+    # Titre principal avec nom dynamique
+    st.title(f"🏗️ {company_name} - Gestion Complète")
     st.caption("Upload, Modification et Suppression de Soumissions Multi-Format")
     
     # CSS pour améliorer l'apparence
@@ -1623,34 +1632,69 @@ def show_admin_dashboard():
     if 'edit_heritage_id' in st.session_state or 'edit_submission_id' in st.session_state:
         show_edit_form()
     else:
-        # Tabs principaux - bien visibles
-        tab1, tab2, tab3, tab4 = st.tabs([
-            "📊 **TABLEAU DE BORD**", 
-            "➕ **CRÉER SOUMISSION HÉRITAGE**", 
-            "📤 **UPLOADER DOCUMENT**",
-            "💾 **SAUVEGARDES**"
-        ])
+        # Tabs principaux - bien visibles avec Entreprise en premier
+        if has_entreprise_config:
+            tab1, tab2, tab3, tab4, tab5 = st.tabs([
+                "🏢 **ENTREPRISE**",
+                "📊 **TABLEAU DE BORD**", 
+                "➕ **CRÉER SOUMISSION HÉRITAGE**", 
+                "📤 **UPLOADER DOCUMENT**",
+                "💾 **SAUVEGARDES**"
+            ])
+        else:
+            tab1, tab2, tab3, tab4 = st.tabs([
+                "📊 **TABLEAU DE BORD**", 
+                "➕ **CRÉER SOUMISSION HÉRITAGE**", 
+                "📤 **UPLOADER DOCUMENT**",
+                "💾 **SAUVEGARDES**"
+            ])
         
-        with tab1:
-            show_dashboard_content()
-        
-        with tab2:
-            # Importer et afficher le module de création de soumission
-            try:
-                from soumission_heritage import show_soumission_heritage
-                show_soumission_heritage()
-            except Exception as e:
-                st.error(f"Erreur chargement module Heritage: {e}")
-                import traceback
-                st.code(traceback.format_exc())
-        
-        with tab3:
-            show_upload_section()
-        
-        with tab4:
-            # Onglet de sauvegarde
-            import backup_manager
-            backup_manager.show_backup_interface()
+        if has_entreprise_config:
+            with tab1:
+                # Afficher la configuration de l'entreprise
+                show_entreprise_config()
+            
+            with tab2:
+                show_dashboard_content()
+            
+            with tab3:
+                # Importer et afficher le module de création de soumission
+                try:
+                    from soumission_heritage import show_soumission_heritage
+                    show_soumission_heritage()
+                except Exception as e:
+                    st.error(f"Erreur chargement module Heritage: {e}")
+                    import traceback
+                    st.code(traceback.format_exc())
+            
+            with tab4:
+                show_upload_section()
+            
+            with tab5:
+                # Onglet de sauvegarde
+                import backup_manager
+                backup_manager.show_backup_interface()
+        else:
+            with tab1:
+                show_dashboard_content()
+            
+            with tab2:
+                # Importer et afficher le module de création de soumission
+                try:
+                    from soumission_heritage import show_soumission_heritage
+                    show_soumission_heritage()
+                except Exception as e:
+                    st.error(f"Erreur chargement module Heritage: {e}")
+                    import traceback
+                    st.code(traceback.format_exc())
+            
+            with tab3:
+                show_upload_section()
+            
+            with tab4:
+                # Onglet de sauvegarde
+                import backup_manager
+                backup_manager.show_backup_interface()
 
 def show_upload_section():
     """Section d'upload de documents"""

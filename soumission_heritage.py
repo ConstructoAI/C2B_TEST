@@ -1,6 +1,6 @@
 """
-Module de création de soumissions budgétaires pour Construction Héritage
-Basé sur le template TEMPLATE_SOUM_BIG_R03.html
+Module de création de soumissions budgétaires personnalisables
+Support multi-entreprises avec configuration dynamique
 """
 
 import streamlit as st
@@ -10,19 +10,50 @@ from datetime import datetime, date
 import sqlite3
 import os
 
-# Configuration de la compagnie
-COMPANY_INFO = {
-    'name': 'Construction Héritage',
-    'address': '129 Rue Poirier',
-    'city': 'Saint-Jean-sur-Richelieu (Québec) J3B 4E9',
-    'phone': '438-524-9193',
-    'cell': '',
-    'email': 'info@constructionheritage.ca',
-    'rbq': '5788-9784-01',
-    'neq': '1163835623',
-    'tps': '850370164RT0001',
-    'tvq': '1212199610TQ0002'
-}
+# Import du module de configuration d'entreprise
+try:
+    from entreprise_config import (
+        get_entreprise_config, 
+        get_formatted_company_info,
+        get_company_colors,
+        get_company_logo,
+        get_commercial_params
+    )
+    DYNAMIC_CONFIG = True
+except ImportError:
+    DYNAMIC_CONFIG = False
+    # Configuration par défaut si le module n'est pas disponible
+    COMPANY_INFO = {
+        'name': 'Construction Héritage',
+        'address': '129 Rue Poirier',
+        'city': 'Saint-Jean-sur-Richelieu (Québec) J3B 4E9',
+        'phone': '438-524-9193',
+        'cell': '',
+        'email': 'info@constructionheritage.ca',
+        'rbq': '5788-9784-01',
+        'neq': '1163835623',
+        'tps': '850370164RT0001',
+        'tvq': '1212199610TQ0002'
+    }
+
+def get_company_info():
+    """Récupère les informations de l'entreprise depuis la configuration"""
+    if DYNAMIC_CONFIG:
+        config = get_entreprise_config()
+        return {
+            'name': config.get('nom', 'Entreprise'),
+            'address': config.get('adresse', ''),
+            'city': f"{config.get('ville', '')} ({config.get('province', 'Québec')}) {config.get('code_postal', '')}",
+            'phone': config.get('telephone_bureau', ''),
+            'cell': config.get('telephone_cellulaire', ''),
+            'email': config.get('email', ''),
+            'rbq': config.get('rbq', ''),
+            'neq': config.get('neq', ''),
+            'tps': config.get('tps', ''),
+            'tvq': config.get('tvq', '')
+        }
+    else:
+        return COMPANY_INFO
 
 # Import des catégories complètes si disponible, sinon utiliser les catégories par défaut
 try:
@@ -215,9 +246,12 @@ def create_soumission_form():
             'exclusions': []
         }
     
+    # Récupérer le nom de l'entreprise
+    company_name = get_company_info()['name']
+    
     st.markdown('<div class="soumission-header">', unsafe_allow_html=True)
     st.title("🏗️ CRÉATION DE SOUMISSION BUDGÉTAIRE")
-    st.markdown("### Construction Héritage")
+    st.markdown(f"### {company_name}")
     st.markdown('</div>', unsafe_allow_html=True)
     
     # Tabs pour organiser le formulaire
@@ -1319,7 +1353,7 @@ def generate_html_for_pdf():
     <body>
         <div class="header">
             <h1>SOUMISSION BUDGÉTAIRE</h1>
-            <h2>Construction Héritage</h2>
+            <h2>{company['name']}</h2>
             <p>Numéro: """ + data['numero'] + """ | Date: """ + data['date'] + """</p>
         </div>
         
@@ -1471,11 +1505,11 @@ def generate_html_for_pdf():
     html += f"""
         <div class="footer">
             <div class="company-info">
-                <strong>Construction Héritage</strong><br>
-                129 Rue Poirier, Saint-Jean-sur-Richelieu (Québec) J3B 4E9<br>
-                Cell: 438-524-9193<br>
-                info@constructionheritage.ca<br>
-                RBQ: 5788-9784-01 | NEQ: 1163835623
+                <strong>{company['name']}</strong><br>
+                {company['address']}, {company['city']}<br>
+                Tél: {company['phone']}<br>
+                {company['email']}<br>
+                RBQ: {company['rbq']} | NEQ: {company['neq']}
             </div>
             <p style="margin-top: 20px;">
                 Cette soumission est valide pour 30 jours à partir de la date d'émission.<br>
@@ -1492,17 +1526,37 @@ def generate_html():
     """Génère le HTML de la soumission avec le style magnifique du template"""
     data = st.session_state.soumission_data
     
+    # Récupérer les informations de l'entreprise
+    company = get_company_info()
+    
+    # Récupérer les paramètres commerciaux
+    if DYNAMIC_CONFIG:
+        params = get_commercial_params()
+        taux = data.get('taux', {
+            'admin': params['taux_administration'] / 100,
+            'contingency': params['taux_contingences'] / 100,
+            'profit': params['taux_profit'] / 100
+        })
+        colors = get_company_colors()
+        logo = get_company_logo()
+    else:
+        taux = data.get('taux', {
+            'admin': 0.03,
+            'contingency': 0.12,
+            'profit': 0.15
+        })
+        colors = {
+            'primary': '#4b5563',
+            'secondary': '#6b7280',
+            'accent': '#3b82f6'
+        }
+        logo = ''
+    
     # Calculer les totaux
     total_travaux = sum(
         item.get('montant', 0) 
         for item in data.get('items', {}).values()
     )
-    
-    taux = data.get('taux', {
-        'admin': 0.03,
-        'contingency': 0.12,
-        'profit': 0.15
-    })
     
     admin_amount = total_travaux * taux['admin']
     contingency_amount = total_travaux * taux['contingency']
@@ -1522,13 +1576,13 @@ def generate_html():
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soumission {data.get('numero', '')} - Construction Héritage</title>
+    <title>Soumission {data.get('numero', '')} - {company['name']}</title>
     <style>
         /* Variables CSS */
         :root {{
-            --primary-color: #4b5563;
-            --primary-light: #6b7280;
-            --primary-dark: #374151;
+            --primary-color: {colors['primary']};
+            --primary-light: {colors['secondary']};
+            --primary-dark: {colors['accent']};
             --primary-bg: #f9fafb;
             --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -1854,19 +1908,20 @@ def generate_html():
         <!-- Header avec gradient -->
         <div class="header-gradient">
             <h1>SOUMISSION BUDGÉTAIRE</h1>
-            <h2>Construction Héritage</h2>
+            <h2>{company['name']}</h2>
             <div class="numero">№ {data.get('numero', '')} | {data.get('date', '')}</div>
         </div>
 
         <!-- Informations entreprise -->
         <div class="company-header">
+            {f'<img src="{logo}" style="max-height: 80px; margin-bottom: 10px;">' if logo else ''}
             <div class="company-info">
-                <strong>CONSTRUCTION HÉRITAGE</strong><br>
-                129 Rue Poirier<br>
-                Saint-Jean-sur-Richelieu (Québec) J3B 4E9<br>
-                Cell: 438-524-9193<br>
-                info@constructionheritage.ca<br>
-                <small>RBQ: 5788-9784-01 | NEQ: 1163835623</small>
+                <strong>{company['name'].upper()}</strong><br>
+                {company['address']}<br>
+                {company['city']}<br>
+                Tél: {company['phone']}{f' | Cell: {company["cell"]}' if company.get('cell') else ''}<br>
+                {company['email']}<br>
+                <small>RBQ: {company['rbq']} | NEQ: {company['neq']}</small>
             </div>
         </div>
 
@@ -2046,10 +2101,10 @@ def generate_html():
     html += f"""
         <div class="footer">
             <div class="footer-info">
-                <p><strong>Construction Héritage</strong></p>
-                <p>129 Rue Poirier, Saint-Jean-sur-Richelieu (Québec) J3B 4E9</p>
-                <p>Cell: 438-524-9193 | info@constructionheritage.ca</p>
-                <p>RBQ: 5788-9784-01 | NEQ: 1163835623 | TPS: 850370164RT0001 | TVQ: 1212199610TQ0002</p>
+                <p><strong>{company['name']}</strong></p>
+                <p>{company['address']}, {company['city']}</p>
+                <p>Tél: {company['phone']} | {company['email']}</p>
+                <p>RBQ: {company['rbq']} | NEQ: {company['neq']} | TPS: {company['tps']} | TVQ: {company['tvq']}</p>
             </div>
             <p style="font-size: 10px; color: #999; margin-top: 20px;">
                 Généré le {data.get('date', '')} | Soumission № {data.get('numero', '')}
@@ -2106,8 +2161,9 @@ def get_saved_submission_html(submission_id):
         return None
 
 if __name__ == "__main__":
+    company_name = get_company_info()['name']
     st.set_page_config(
-        page_title="Soumission - Construction Héritage",
+        page_title=f"Soumission - {company_name}",
         page_icon="🏗️",
         layout="wide"
     )
