@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: gestionnaire-soumissions
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    
+    # IMPORTANT: Disque persistant pour les données
+    disk:
+      name: soumissions-data
+      mountPath: /data
+      sizeGB: 1  # 1 GB pour le plan gratuit
+    
+    envVars:
+      - key: STREAMLIT_SERVER_HEADLESS
+        value: true
+      - key: STREAMLIT_SERVER_ENABLE_CORS
+        value: false
+      - key: ADMIN_PASSWORD
+        value: admin2025
+      - key: RENDER
+        value: true
+      - key: DATA_DIR
+        value: /data/databases
+      - key: FILES_DIR
+        value: /data/files
+    
+    healthCheckPath: /
+    autoDeploy: true

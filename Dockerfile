@@ -23,8 +23,9 @@ COPY . .
 RUN mkdir -p data files && \
     chmod -R 777 data files
 
-# Rendre le script d'initialisation exécutable
-RUN chmod +x init_render.sh
+# Rendre les scripts d'initialisation exécutables
+RUN chmod +x init_render.sh || true
+RUN chmod +x init_render_safe.sh || true
 
 # Variable d'environnement pour le port
 ENV PORT=8501
@@ -33,9 +34,13 @@ ENV PORT=8501
 EXPOSE $PORT
 
 # Commande de démarrage
-# Utilise le script d'initialisation si on est sur Render, sinon commande normale
+# Utilise le script sécurisé si disponible, sinon l'ancien script, sinon commande normale
 CMD if [ "$RENDER" = "true" ]; then \
-        ./init_render.sh; \
+        if [ -f "./init_render_safe.sh" ]; then \
+            ./init_render_safe.sh; \
+        else \
+            ./init_render.sh; \
+        fi \
     else \
         streamlit run app.py \
         --server.port=$PORT \

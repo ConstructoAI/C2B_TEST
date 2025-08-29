@@ -1,0 +1,2133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="description" content="Bon de commande interactif pour Construction Héritage">
+    <meta name="author" content="Construction Héritage">
+    <title>BON DE COMMANDE INTERACTIF - Construction Héritage</title>
+    <style>
+        /* Variables CSS */
+        :root {
+            --primary-color: #4b5563;
+            --primary-light: #6b7280;
+            --primary-dark: #374151;
+            --primary-bg: #f9fafb;
+            --danger-color: #ef4444;
+            --danger-hover: #dc2626;
+            --success-color: #10b981;
+            --success-hover: #059669;
+            --warning-color: #f59e0b;
+            --warning-hover: #d97706;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            --transition-base: all 0.3s ease;
+        }
+
+        /* Reset et Base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            font-size: 10px;
+            line-height: 1.3;
+            color: #333;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        /* Conteneur principal */
+        .container {
+            max-width: 8.5in;
+            margin: 20px auto;
+            background: white;
+            box-shadow: var(--shadow-lg);
+            padding: 0.4in;
+            position: relative;
+        }
+
+        /* Barre de contrôle */
+        .control-bar {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
+            color: white;
+            padding: 20px 15px;
+            margin: -0.4in -0.4in 20px -0.4in;
+            z-index: 1000;
+            box-shadow: var(--shadow-md);
+            text-align: center;
+        }
+
+        .control-bar h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            opacity: 0.95;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn {
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: var(--transition-base);
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            min-width: 140px;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .control-btn:active {
+            transform: translateY(0) scale(1);
+        }
+
+        .control-btn.danger {
+            background: rgba(239, 68, 68, 0.8);
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+
+        .control-btn.danger:hover {
+            background: rgba(220, 38, 38, 0.9);
+        }
+
+        .control-btn.success {
+            background: rgba(34, 197, 94, 0.9);
+            border-color: rgba(34, 197, 94, 0.5);
+        }
+
+        .control-btn.success:hover {
+            background: rgba(22, 163, 74, 1);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 15px;
+        }
+
+        .company-info {
+            text-align: left;
+            font-size: 10px;
+            line-height: 1.2;
+            color: #555;
+            flex: 1;
+        }
+
+        .company-info input {
+            transition: all 0.2s ease;
+            color: #555;
+            font-family: inherit;
+            font-size: 10px;
+        }
+
+        .company-info input:hover:not(:focus) {
+            background: rgba(75, 85, 99, 0.03) !important;
+            cursor: pointer;
+        }
+
+        .company-info input:focus {
+            background: rgba(255, 255, 255, 0.8) !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 2px;
+            padding: 1px 3px;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(75, 85, 99, 0.05);
+        }
+
+        .company-info input.inline {
+            display: inline-block;
+            margin: 0 2px;
+        }
+
+        .company-name {
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 2px;
+            color: var(--primary-dark);
+        }
+
+        .company-name input {
+            color: var(--primary-dark);
+            font-weight: bold;
+            font-size: 12px;
+            width: 100%;
+            margin-bottom: 2px;
+        }
+
+        .document-header {
+            text-align: right;
+            flex: 1;
+        }
+
+        /* Title */
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-dark);
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        /* Info Sections */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-section {
+            padding: 10px;
+            background: #fafafa;
+            border-radius: 4px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .info-section h4 {
+            font-weight: bold;
+            font-size: 10px;
+            margin-bottom: 8px;
+            color: var(--primary-dark);
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--primary-color);
+        }
+
+        .info-section p {
+            font-size: 10px;
+            line-height: 1.4;
+            margin-bottom: 3px;
+        }
+
+        /* Tables */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+            table-layout: fixed;
+            background: white;
+        }
+
+        .table-header th {
+            padding: 8px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 10px;
+            border-right: 1px solid #777;
+            vertical-align: middle;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
+            color: white;
+        }
+
+        .table-header th:nth-child(1) { width: 8%; text-align: center; }
+        .table-header th:nth-child(2) { width: 38%; text-align: left; }
+        .table-header th:nth-child(3) { width: 10%; text-align: center; }
+        .table-header th:nth-child(4) { width: 10%; text-align: center; }
+        .table-header th:nth-child(5) { width: 14%; text-align: right; }
+        .table-header th:nth-child(6) { width: 14%; text-align: right; }
+        .table-header th:nth-child(7) { width: 6%; text-align: center; border-right: none; }
+
+        .table tbody tr:nth-child(even) { background: #f9fafb; }
+        .table tbody tr:hover { background: #f3f4f6; }
+
+        .table td {
+            padding: 6px 8px;
+            border-right: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+            font-size: 10px;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        .table td:nth-child(1) { width: 8%; text-align: center; }
+        .table td:nth-child(2) { width: 38%; text-align: left; }
+        .table td:nth-child(3) { width: 10%; text-align: center; }
+        .table td:nth-child(4) { width: 10%; text-align: center; }
+        .table td:nth-child(5) { width: 14%; text-align: right; }
+        .table td:nth-child(6) { width: 14%; text-align: right; font-weight: bold; }
+        .table td:nth-child(7) { width: 6%; text-align: center; border-right: none; }
+
+        .item-number {
+            font-weight: bold;
+            color: #666;
+        }
+
+        .item-description { 
+            font-weight: bold; 
+            color: #333; 
+            line-height: 1.3;
+            position: relative;
+        }
+        
+        .item-details { 
+            font-size: 9px; 
+            color: #666; 
+            display: block; 
+            margin-top: 3px; 
+            font-style: italic; 
+            line-height: 1.3; 
+            font-weight: normal; 
+        }
+
+        /* Champs éditables */
+        .item-title-input {
+            font-weight: bold;
+            color: #333;
+            border: none;
+            background: transparent;
+            width: 100%;
+            font-size: 10px;
+            line-height: 1.3;
+            padding: 2px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .item-title-input:hover {
+            background: rgba(75, 85, 99, 0.03);
+            cursor: pointer;
+        }
+
+        .item-title-input:focus {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 2px;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(75, 85, 99, 0.05);
+        }
+
+        .item-details-input {
+            font-size: 9px;
+            color: #666;
+            border: none;
+            background: transparent;
+            width: 100%;
+            line-height: 1.3;
+            font-style: italic;
+            font-weight: normal;
+            padding: 2px;
+            margin-top: 3px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 30px;
+        }
+
+        .item-details-input:hover {
+            background: rgba(75, 85, 99, 0.03);
+            cursor: pointer;
+        }
+
+        .item-details-input:focus {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 2px;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(75, 85, 99, 0.05);
+            font-style: normal;
+        }
+        
+        .subtotal-row td { 
+            background: #f3f4f6 !important; 
+            font-weight: bold !important; 
+            padding: 6px 8px !important; 
+        }
+        
+        .total-row td { 
+            background: var(--primary-bg) !important; 
+            font-weight: bold !important; 
+            font-size: 11px !important; 
+            border-top: 2px solid var(--primary-color); 
+        }
+
+        /* Inputs numériques */
+        .amount-input {
+            width: 100%;
+            padding: 4px 6px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 10px;
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            transition: var(--transition-base);
+        }
+
+        .amount-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: var(--primary-bg);
+            box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.1);
+        }
+
+        .amount-input.error {
+            border-color: var(--danger-color);
+            background: #fef2f2;
+        }
+
+        .quantity-input {
+            width: 100%;
+            padding: 4px 6px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 10px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            transition: var(--transition-base);
+        }
+
+        .quantity-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: var(--primary-bg);
+            box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.1);
+        }
+
+        .unit-input {
+            width: 100%;
+            padding: 4px 6px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 10px;
+            text-align: center;
+            transition: var(--transition-base);
+        }
+
+        .unit-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: var(--primary-bg);
+            box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.1);
+        }
+
+        /* Header inputs */
+        .header-input {
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 3px 8px;
+            font-size: 11px;
+            background: #f9f9f9;
+            transition: var(--transition-base);
+        }
+
+        .header-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: white;
+            box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.1);
+        }
+
+        .date-input {
+            width: 140px;
+        }
+
+        /* Info inputs */
+        .info-input {
+            border: 1px solid #e5e7eb;
+            border-radius: 3px;
+            padding: 4px 8px;
+            font-size: 10px;
+            background: white;
+            transition: var(--transition-base);
+            width: 100%;
+            font-family: inherit;
+            min-width: 40px;
+        }
+
+        .info-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+        }
+
+        .info-input.inline {
+            display: inline;
+            width: auto;
+        }
+
+        .info-input::placeholder {
+            color: #9ca3af;
+            font-style: italic;
+            font-size: 9px;
+        }
+
+        strong .info-input {
+            font-weight: 600;
+        }
+
+        .amount-display {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #111;
+        }
+
+        /* Boutons d'action */
+        .action-btn {
+            padding: 4px 8px;
+            font-size: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            cursor: pointer;
+            background: white;
+            transition: all 0.3s;
+        }
+
+        .action-btn.add {
+            color: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        .action-btn.add:hover {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .action-btn.remove {
+            color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+
+        .action-btn.remove:hover {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        /* Section des pièces jointes */
+        .attachments-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 1px solid #0284c7;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .attachments-section h4 {
+            font-size: 14px;
+            color: #0c4a6e;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .attachment-dropzone {
+            border: 2px dashed #0284c7;
+            border-radius: 6px;
+            padding: 30px;
+            text-align: center;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+        
+        .attachment-dropzone:hover {
+            background: #f0f9ff;
+            border-color: #0369a1;
+        }
+        
+        .attachment-dropzone.dragover {
+            background: #dbeafe;
+            border-color: #0369a1;
+            transform: scale(1.02);
+        }
+        
+        .dropzone-text {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 10px;
+        }
+        
+        .dropzone-icon {
+            font-size: 48px;
+            color: #0284c7;
+            margin-bottom: 10px;
+        }
+        
+        .file-input-label {
+            display: inline-block;
+            padding: 8px 20px;
+            background: #0284c7;
+            color: white;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .file-input-label:hover {
+            background: #0369a1;
+            transform: translateY(-1px);
+        }
+        
+        #fileInput {
+            display: none;
+        }
+
+        /* Récapitulatif */
+        .summary-box {
+            margin-top: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f9fafb 0%, #e5e7eb 100%);
+            border-radius: 6px;
+            border-left: 4px solid var(--primary-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .summary-box h4 {
+            margin-bottom: 15px;
+            font-size: 13px;
+            color: var(--primary-dark);
+            font-weight: 600;
+        }
+
+        .summary-table {
+            width: 100%;
+            font-size: 11px;
+        }
+
+        .summary-table td {
+            padding: 6px 10px;
+        }
+
+        .summary-table .label {
+            text-align: right;
+            padding-right: 20px;
+            color: #555;
+        }
+
+        .summary-table .value {
+            text-align: right;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            width: 150px;
+            color: #111;
+        }
+
+        .summary-table .total-row {
+            border-top: 2px solid var(--primary-color);
+            font-size: 14px;
+            background: white;
+        }
+
+        /* Conditions et modalités */
+        .conditions {
+            margin-top: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #fafafa 0%, #f9fafb 100%);
+            border: 1px solid #e5e7eb;
+            border-left: 4px solid var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .conditions h4 { 
+            font-weight: bold; 
+            margin-bottom: 10px; 
+            color: var(--primary-dark); 
+            font-size: 11px; 
+        }
+        
+        .conditions ul { 
+            margin-left: 15px; 
+        }
+        
+        .conditions li { 
+            margin-bottom: 4px; 
+            font-size: 9px; 
+            line-height: 1.4; 
+            color: #555;
+            display: list-item;
+            list-style-type: disc;
+            list-style-position: outside;
+        }
+
+        /* Section Signature */
+        .signature-section {
+            margin-top: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid #0284c7;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .signature-section h4 {
+            font-size: 14px;
+            color: #0c4a6e;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .signature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 20px;
+        }
+
+        .signature-box {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .signature-line {
+            border-bottom: 2px solid #333;
+            margin-bottom: 10px;
+            height: 40px;
+        }
+
+        .signature-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .signature-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 11px;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 9px;
+            color: #666;
+            border-top: 2px solid var(--primary-color);
+            padding-top: 15px;
+        }
+
+        /* Save indicator */
+        .save-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: var(--success-color);
+            color: white;
+            border-radius: 6px;
+            box-shadow: var(--shadow-lg);
+            display: none;
+            z-index: 1001;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .save-indicator.show {
+            display: block;
+            animation: fadeInOut 2s ease;
+        }
+
+        .save-indicator.error {
+            background: var(--danger-color);
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(20px); }
+            20% { opacity: 1; transform: translateY(0); }
+            80% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(20px); }
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Modal pour liste des sauvegardes */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 3000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            max-width: 600px;
+            width: 90%;
+            max-height: 70vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: var(--primary-dark);
+            font-size: 18px;
+        }
+
+        .modal-close {
+            cursor: pointer;
+            font-size: 24px;
+            color: #999;
+            background: none;
+            border: none;
+            padding: 0;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: var(--danger-color);
+        }
+
+        .saved-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .saved-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        .saved-item:hover {
+            background: #f3f4f6;
+            border-color: var(--primary-color);
+            transform: translateX(5px);
+        }
+
+        .saved-item-info {
+            flex: 1;
+        }
+
+        .saved-item-number {
+            font-weight: bold;
+            color: var(--primary-dark);
+            font-size: 12px;
+        }
+
+        .saved-item-details {
+            font-size: 10px;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        .saved-item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .saved-item-btn {
+            padding: 5px 10px;
+            font-size: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            cursor: pointer;
+            background: white;
+            transition: all 0.3s;
+        }
+
+        .saved-item-btn.load {
+            color: var(--primary-dark);
+            border-color: var(--primary-color);
+        }
+
+        .saved-item-btn.load:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .saved-item-btn.delete {
+            color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+
+        .saved-item-btn.delete:hover {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .no-saves {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-style: italic;
+        }
+
+        /* Mode impression */
+        @media print {
+            body {
+                background: white;
+                font-size: 9px;
+            }
+            
+            .control-bar {
+                display: none !important;
+            }
+            
+            .loading-overlay {
+                display: none !important;
+            }
+            
+            .save-indicator {
+                display: none !important;
+            }
+            
+            .container {
+                box-shadow: none;
+                margin: 0;
+                padding: 0.3in;
+                max-width: 100%;
+            }
+            
+            .action-btn {
+                display: none !important;
+            }
+            
+            .amount-input, .quantity-input, .unit-input, .header-input, .info-input,
+            .item-title-input, .item-details-input {
+                border: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+            }
+            
+            .table-header th:nth-child(7),
+            .table td:nth-child(7) {
+                display: none !important;
+            }
+            
+            .attachments-section {
+                display: none !important;
+            }
+            
+            .table-header th {
+                background: var(--primary-dark) !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                color-adjust: exact;
+            }
+        }
+
+        /* Responsive */
+        @media screen and (max-width: 768px) {
+            .container {
+                margin: 0;
+                padding: 15px;
+                box-shadow: none;
+            }
+            
+            .control-bar {
+                margin: -15px -15px 15px -15px;
+                padding: 15px 10px;
+            }
+            
+            .control-buttons {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .control-btn {
+                width: 100%;
+                min-width: auto;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .signature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Barre de contrôle -->
+    <div class="control-bar" id="controlBar">
+        <h3>📋 Contrôles du Bon de Commande</h3>
+        <div class="control-buttons">
+            <button class="control-btn success" onclick="BOC.calculateAll()" title="Recalculer tous les montants">
+                💰 Recalculer tout
+            </button>
+            <button class="control-btn" onclick="BOC.addItem()" title="Ajouter une nouvelle ligne">
+                ➕ Ajouter ligne
+            </button>
+            <button class="control-btn" onclick="BOC.saveData()" title="Sauvegarder dans le navigateur">
+                💾 Sauvegarder
+            </button>
+            <button class="control-btn success" onclick="BOC.saveAs()" title="Enregistrer sous un nouveau numéro">
+                💾 Enregistrer sous
+            </button>
+            <button class="control-btn" onclick="BOC.showSavedList()" title="Voir et charger les bons sauvegardés">
+                📂 Charger
+            </button>
+            <button class="control-btn danger" onclick="BOC.resetAll()" title="Réinitialiser tous les champs">
+                🔄 Réinitialiser
+            </button>
+            <button class="control-btn" onclick="window.print()" title="Imprimer le document">
+                🖨️ Imprimer
+            </button>
+            <button class="control-btn" onclick="BOC.exportData()" title="Exporter en fichier JSON">
+                📥 Exporter JSON
+            </button>
+            <button class="control-btn" onclick="BOC.importData()" title="Importer un fichier JSON">
+                📤 Importer JSON
+            </button>
+            <button class="control-btn success" onclick="BOC.exportHTML()" title="Télécharger une copie HTML complète">
+                📄 Télécharger HTML
+            </button>
+        </div>
+    </div>
+
+    <!-- Indicateur de sauvegarde -->
+    <div class="save-indicator" id="saveIndicator">
+        <span id="saveMessage">✔ Sauvegarde automatique</span>
+    </div>
+
+    <!-- Modal pour liste des sauvegardes -->
+    <div id="savedListModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📂 Bons de Commande sauvegardés</h3>
+                <button class="modal-close" onclick="BOC.closeSavedList()">×</button>
+            </div>
+            <div id="savedListContent">
+                <!-- Le contenu sera généré dynamiquement -->
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="company-info">
+                <div class="company-name">
+                    <input type="text" id="nomEntreprise" value="Construction Héritage" style="border: none; background: transparent;" placeholder="Nom de l'entreprise" maxlength="100" onchange="BOC.autoSave()">
+                </div>
+                <div>
+                    <input type="text" id="adresseEntreprise" value="129 Rue Poirier" style="border: none; background: transparent; width: 100%;" placeholder="Adresse" maxlength="200" onchange="BOC.autoSave()">
+                </div>
+                <div>
+                    <input type="text" id="villeEntreprise" value="Saint-Jean-sur-Richelieu (Québec) J3B 4E9" style="border: none; background: transparent; width: 100%;" placeholder="Ville, Province, Code postal" maxlength="100" onchange="BOC.autoSave()">
+                </div>
+                <div>
+                    <span style="color: #555;">T:</span> 
+                    <input type="text" class="inline" id="telEntreprise" value="438.524.9193" style="border: none; background: transparent; width: 65px;" placeholder="Téléphone" maxlength="20" onchange="BOC.autoSave()">
+                    <span style="color: #555; margin: 0 5px;">|</span>
+                    <span style="color: #555;">C:</span> 
+                    <input type="text" class="inline" id="cellEntreprise" value="514.983.7492" style="border: none; background: transparent; width: 65px;" placeholder="Cellulaire" maxlength="20" onchange="BOC.autoSave()">
+                </div>
+                <div>
+                    <input type="email" id="emailEntreprise" value="info@constructionheritage.ca" style="border: none; background: transparent; width: 100%;" placeholder="Courriel" maxlength="100" onchange="BOC.autoSave()">
+                </div>
+                <div>
+                    <span style="color: #555;">RBQ :</span> 
+                    <input type="text" class="inline" id="rbqEntreprise" value="5788-9784-01" style="border: none; background: transparent; width: 75px;" placeholder="RBQ" maxlength="20" onchange="BOC.autoSave()">
+                    <span style="color: #555; margin: 0 5px;">|</span>
+                    <span style="color: #555;">NEQ :</span> 
+                    <input type="text" class="inline" id="neqEntreprise" value="1163835623" style="border: none; background: transparent; width: 65px;" placeholder="NEQ" maxlength="20" onchange="BOC.autoSave()">
+                </div>
+            </div>
+            <div class="document-header">
+                <div class="title">BON DE COMMANDE</div>
+                <div class="subtitle">
+                    N° <input type="text" id="numeroBon" class="header-input" value="BC-2025-001" style="width: 100px;" maxlength="20" onchange="BOC.autoSave()">
+                </div>
+                <div class="subtitle">
+                    Date: <input type="date" id="dateBon" class="header-input date-input" onchange="BOC.autoSave()">
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Sections -->
+        <div class="info-grid">
+            <div class="info-section">
+                <h4>FOURNISSEUR / SOUS-TRAITANT</h4>
+                <p><strong><input type="text" class="info-input" id="nomFournisseur" placeholder="Nom du fournisseur" maxlength="100" onchange="BOC.autoSave()"></strong></p>
+                <p><input type="text" class="info-input" id="adresseFournisseur" placeholder="Adresse" maxlength="200" onchange="BOC.autoSave()"></p>
+                <p>
+                    <input type="text" class="info-input inline" id="villeFournisseur" placeholder="Ville" style="width: 60%;" maxlength="50" onchange="BOC.autoSave()"> (Québec) 
+                    <input type="text" class="info-input inline" id="codePostalFournisseur" placeholder="Code postal" style="width: 30%;" maxlength="7" onchange="BOC.autoSave()">
+                </p>
+                <p>
+                    T: <input type="text" class="info-input inline" id="telFournisseur" placeholder="Téléphone" style="width: 75px;" maxlength="20" onchange="BOC.autoSave()"> | 
+                    C: <input type="text" class="info-input inline" id="cellFournisseur" placeholder="Cellulaire" style="width: 75px;" maxlength="20" onchange="BOC.autoSave()">
+                </p>
+                <p>Contact: <input type="text" class="info-input inline" id="contactFournisseur" placeholder="Nom du contact" style="width: 120px;" maxlength="50" onchange="BOC.autoSave()"></p>
+            </div>
+            <div class="info-section">
+                <h4>PROJET / CLIENT</h4>
+                <p><strong><input type="text" class="info-input" id="nomClient" placeholder="Nom du client" maxlength="100" onchange="BOC.autoSave()"></strong></p>
+                <p>Projet: <input type="text" class="info-input inline" id="nomProjet" placeholder="Nom du projet" style="width: 70%;" maxlength="100" onchange="BOC.autoSave()"></p>
+                <p>Lieu: <input type="text" class="info-input inline" id="lieuProjet" placeholder="Lieu des travaux" style="width: 75%;" maxlength="100" onchange="BOC.autoSave()"></p>
+                <p>Réf. soumission: <input type="text" class="info-input inline" id="refSoumission" placeholder="Référence" style="width: 60%;" maxlength="50" onchange="BOC.autoSave()"></p>
+                <p>Chargé projet: <input type="text" class="info-input inline" id="chargeProjet" placeholder="Nom" style="width: 65%;" maxlength="50" onchange="BOC.autoSave()"></p>
+            </div>
+        </div>
+
+        <!-- Table des items -->
+        <div class="section">
+            <table class="table">
+                <thead class="table-header">
+                    <tr>
+                        <th>Item</th>
+                        <th>Description</th>
+                        <th>Quantité</th>
+                        <th>Unité</th>
+                        <th>Prix unitaire</th>
+                        <th>Total</th>
+                        <th title="Actions">⚙</th>
+                    </tr>
+                </thead>
+                <tbody id="itemsTableBody">
+                    <!-- Les lignes seront générées dynamiquement -->
+                </tbody>
+                <tfoot>
+                    <tr class="subtotal-row">
+                        <td colspan="5">Sous-total</td>
+                        <td class="amount-display" id="subtotal">0,00 $</td>
+                        <td>
+                            <button class="action-btn add" onclick="BOC.addItem()" title="Ajouter une ligne">+</button>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- Récapitulatif -->
+        <div class="summary-box">
+            <h4>📊 RÉCAPITULATIF</h4>
+            <table class="summary-table">
+                <tr>
+                    <td class="label">Sous-total:</td>
+                    <td class="value" id="totalBase">0,00 $</td>
+                </tr>
+                <tr>
+                    <td class="label">TPS (5%):</td>
+                    <td class="value" id="totalTPS">0,00 $</td>
+                </tr>
+                <tr>
+                    <td class="label">TVQ (9.975%):</td>
+                    <td class="value" id="totalTVQ">0,00 $</td>
+                </tr>
+                <tr class="total-row">
+                    <td class="label"><strong>TOTAL:</strong></td>
+                    <td class="value"><strong id="totalFinal">0,00 $</strong></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Conditions -->
+        <div class="conditions">
+            <h4>CONDITIONS ET MODALITÉS</h4>
+            <ul>
+                <li><strong>Validité:</strong> <input type="text" class="info-input inline" id="validite" value="30 jours" style="width: 80px;" onchange="BOC.autoSave()"> à partir de la date d'émission</li>
+                <li><strong>Modalités de paiement:</strong> <input type="text" class="info-input inline" id="paiement" value="Net 30 jours" style="width: 150px;" onchange="BOC.autoSave()"></li>
+                <li><strong>Début des travaux:</strong> <input type="date" class="info-input inline" id="dateDebut" style="width: 140px;" onchange="BOC.autoSave()"></li>
+                <li><strong>Fin prévue:</strong> <input type="date" class="info-input inline" id="dateFin" style="width: 140px;" onchange="BOC.autoSave()"></li>
+                <li>Tous travaux supplémentaires devront faire l'objet d'un avenant signé</li>
+                <li>Les prix sont sujets à ajustement si augmentation des matériaux >5%</li>
+            </ul>
+        </div>
+
+        <!-- Section Signature -->
+        <div class="signature-section">
+            <h4>🖊️ SIGNATURES</h4>
+            <div class="signature-grid">
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">AUTORISÉ PAR</div>
+                    <input type="text" class="signature-input" id="signatureAuteur" placeholder="Nom et titre" onchange="BOC.autoSave()">
+                    <input type="date" class="signature-input" id="dateSignatureAuteur" onchange="BOC.autoSave()">
+                </div>
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">ACCEPTÉ PAR</div>
+                    <input type="text" class="signature-input" id="signatureFournisseur" placeholder="Nom et titre" onchange="BOC.autoSave()">
+                    <input type="date" class="signature-input" id="dateSignatureFournisseur" onchange="BOC.autoSave()">
+                </div>
+            </div>
+        </div>
+
+        <!-- Pièces jointes -->
+        <div class="attachments-section" id="attachmentsSection">
+            <h4>📎 PIÈCES JOINTES</h4>
+            
+            <div class="attachment-dropzone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                <div class="dropzone-icon">📁</div>
+                <div class="dropzone-text">
+                    Glissez-déposez vos fichiers ici ou cliquez pour parcourir
+                </div>
+                <label for="fileInput" class="file-input-label" onclick="event.stopPropagation()">
+                    Choisir des fichiers
+                </label>
+                <input type="file" id="fileInput" multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.txt,.jpg,.jpeg,.png" onchange="BOC.handleFileSelect(event)">
+            </div>
+            
+            <div class="attachments-list" id="attachmentsList">
+                <!-- Les fichiers joints apparaîtront ici -->
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Ce bon de commande est soumis aux conditions générales de Construction Héritage</strong></p>
+            <p style="margin-top: 10px;">© 2025 Construction Héritage - Tous droits réservés</p>
+            <p style="margin-top: 10px; font-size: 8px; color: #999;">Développé par Sylvain Leduc</p>
+        </div>
+    </div>
+
+    <script>
+        'use strict';
+
+        // Configuration
+        const CONFIG = {
+            TAXES: {
+                TPS: 0.05,
+                TVQ: 0.09975
+            },
+            LIMITS: {
+                MAX_AMOUNT: 99999999,
+                MIN_AMOUNT: 0,
+                AUTO_SAVE_DELAY: 30000
+            }
+        };
+
+        // Application BON DE COMMANDE
+        const BOC = {
+            // État
+            state: {
+                items: [],
+                isDirty: false,
+                lastSaveTime: 0,
+                autoSaveTimer: null,
+                itemCounter: 1
+            },
+
+            // Initialisation
+            init() {
+                try {
+                    // Charger les données
+                    BOC.loadData();
+                    
+                    // Si aucun item, ajouter une ligne par défaut
+                    if (BOC.state.items.length === 0) {
+                        BOC.addItem();
+                    }
+                    
+                    // Recalculer
+                    BOC.calculateAll();
+                    
+                    // Auto-save
+                    BOC.state.autoSaveTimer = setInterval(() => {
+                        if (BOC.state.isDirty) {
+                            BOC.autoSave();
+                        }
+                    }, CONFIG.LIMITS.AUTO_SAVE_DELAY);
+
+                    // Event listeners
+                    window.addEventListener('beforeunload', (e) => {
+                        if (BOC.state.isDirty) {
+                            BOC.autoSave();
+                            e.preventDefault();
+                            e.returnValue = 'Des modifications non sauvegardées seront perdues.';
+                        }
+                    });
+
+                    // Drag and drop
+                    const dropZone = document.getElementById('dropZone');
+                    if (dropZone) {
+                        dropZone.addEventListener('dragover', (e) => {
+                            e.preventDefault();
+                            dropZone.classList.add('dragover');
+                        });
+                        
+                        dropZone.addEventListener('dragleave', (e) => {
+                            e.preventDefault();
+                            dropZone.classList.remove('dragover');
+                        });
+                        
+                        dropZone.addEventListener('drop', (e) => {
+                            e.preventDefault();
+                            dropZone.classList.remove('dragover');
+                            const files = e.dataTransfer.files;
+                            BOC.processFiles(files);
+                        });
+                    }
+
+                    console.log('BON DE COMMANDE initialisé');
+                } catch (error) {
+                    console.error('Erreur init:', error);
+                }
+            },
+
+            // Utilitaires
+            utils: {
+                formatCurrency(amount) {
+                    return new Intl.NumberFormat('fr-CA', {
+                        style: 'currency',
+                        currency: 'CAD',
+                        minimumFractionDigits: 2
+                    }).format(amount).replace('CA', '');
+                },
+
+                parseCurrency(text) {
+                    if (!text) return 0;
+                    const cleaned = text.toString().replace(/[^\d,-]/g, '').replace(',', '.');
+                    return Math.round(parseFloat(cleaned) * 100) / 100 || 0;
+                },
+
+                showNotification(message, isError = false) {
+                    const indicator = document.getElementById('saveIndicator');
+                    const messageEl = document.getElementById('saveMessage');
+                    
+                    if (indicator && messageEl) {
+                        messageEl.textContent = message;
+                        indicator.classList.toggle('error', isError);
+                        indicator.classList.add('show');
+                        
+                        setTimeout(() => {
+                            indicator.classList.remove('show');
+                            indicator.classList.remove('error');
+                        }, 2000);
+                    }
+                },
+
+                showLoading(show = true) {
+                    const overlay = document.getElementById('loadingOverlay');
+                    if (overlay) {
+                        overlay.classList.toggle('show', show);
+                    }
+                }
+            },
+
+            // Ajouter un item
+            addItem() {
+                const item = {
+                    id: Date.now(),
+                    number: BOC.state.itemCounter++,
+                    title: '',
+                    description: '',
+                    quantity: 1,
+                    unit: 'unité',
+                    unitPrice: 0,
+                    total: 0
+                };
+                
+                BOC.state.items.push(item);
+                BOC.renderItems();
+                BOC.state.isDirty = true;
+            },
+
+            // Supprimer un item
+            removeItem(id) {
+                if (BOC.state.items.length <= 1) {
+                    BOC.utils.showNotification('⚠️ Gardez au moins une ligne', true);
+                    return;
+                }
+                
+                BOC.state.items = BOC.state.items.filter(item => item.id !== id);
+                BOC.renderItems();
+                BOC.calculateAll();
+                BOC.state.isDirty = true;
+            },
+
+            // Afficher les items
+            renderItems() {
+                const tbody = document.getElementById('itemsTableBody');
+                if (!tbody) return;
+
+                tbody.innerHTML = BOC.state.items.map(item => `
+                    <tr>
+                        <td><span class="item-number">${item.number}</span></td>
+                        <td>
+                            <input type="text" class="item-title-input" value="${item.title || ''}" 
+                                   placeholder="Titre de l'item" 
+                                   onchange="BOC.updateItem(${item.id}, 'title', this.value)">
+                            <textarea class="item-details-input" 
+                                      placeholder="Description détaillée"
+                                      onchange="BOC.updateItem(${item.id}, 'description', this.value)">${item.description || ''}</textarea>
+                        </td>
+                        <td>
+                            <input type="number" class="quantity-input" value="${item.quantity}" 
+                                   min="0" max="9999" step="1"
+                                   onchange="BOC.updateItem(${item.id}, 'quantity', this.value)">
+                        </td>
+                        <td>
+                            <input type="text" class="unit-input" value="${item.unit || 'unité'}" 
+                                   placeholder="Unité"
+                                   onchange="BOC.updateItem(${item.id}, 'unit', this.value)">
+                        </td>
+                        <td>
+                            <input type="number" class="amount-input" value="${item.unitPrice}" 
+                                   min="0" max="${CONFIG.LIMITS.MAX_AMOUNT}" step="0.01"
+                                   onchange="BOC.updateItem(${item.id}, 'unitPrice', this.value)">
+                        </td>
+                        <td class="amount-display">${BOC.utils.formatCurrency(item.total)}</td>
+                        <td>
+                            <button class="action-btn remove" onclick="BOC.removeItem(${item.id})" title="Supprimer">×</button>
+                        </td>
+                    </tr>
+                `).join('');
+            },
+
+            // Mettre à jour un item
+            updateItem(id, field, value) {
+                const item = BOC.state.items.find(i => i.id === id);
+                if (!item) return;
+
+                if (field === 'quantity' || field === 'unitPrice') {
+                    value = parseFloat(value) || 0;
+                }
+
+                item[field] = value;
+
+                // Recalculer le total de l'item
+                if (field === 'quantity' || field === 'unitPrice') {
+                    item.total = item.quantity * item.unitPrice;
+                    BOC.calculateAll();
+                }
+
+                BOC.state.isDirty = true;
+            },
+
+            // Calculer tous les totaux
+            calculateAll() {
+                let subtotal = 0;
+
+                // Calculer le sous-total
+                BOC.state.items.forEach(item => {
+                    item.total = item.quantity * item.unitPrice;
+                    subtotal += item.total;
+                });
+
+                // Calculer les taxes
+                const tps = subtotal * CONFIG.TAXES.TPS;
+                const tvq = subtotal * CONFIG.TAXES.TVQ;
+                const total = subtotal + tps + tvq;
+
+                // Mettre à jour l'affichage
+                document.getElementById('subtotal').textContent = BOC.utils.formatCurrency(subtotal);
+                document.getElementById('totalBase').textContent = BOC.utils.formatCurrency(subtotal);
+                document.getElementById('totalTPS').textContent = BOC.utils.formatCurrency(tps);
+                document.getElementById('totalTVQ').textContent = BOC.utils.formatCurrency(tvq);
+                document.getElementById('totalFinal').textContent = BOC.utils.formatCurrency(total);
+
+                // Mettre à jour l'affichage des items
+                BOC.renderItems();
+            },
+
+            // Collecter les données
+            collectData() {
+                const data = {
+                    version: '1.0',
+                    numeroBon: document.getElementById('numeroBon')?.value || '',
+                    dateBon: document.getElementById('dateBon')?.value || '',
+                    // Entreprise
+                    entreprise: {
+                        nom: document.getElementById('nomEntreprise')?.value || '',
+                        adresse: document.getElementById('adresseEntreprise')?.value || '',
+                        ville: document.getElementById('villeEntreprise')?.value || '',
+                        tel: document.getElementById('telEntreprise')?.value || '',
+                        cell: document.getElementById('cellEntreprise')?.value || '',
+                        email: document.getElementById('emailEntreprise')?.value || '',
+                        rbq: document.getElementById('rbqEntreprise')?.value || '',
+                        neq: document.getElementById('neqEntreprise')?.value || ''
+                    },
+                    // Fournisseur
+                    fournisseur: {
+                        nom: document.getElementById('nomFournisseur')?.value || '',
+                        adresse: document.getElementById('adresseFournisseur')?.value || '',
+                        ville: document.getElementById('villeFournisseur')?.value || '',
+                        codePostal: document.getElementById('codePostalFournisseur')?.value || '',
+                        tel: document.getElementById('telFournisseur')?.value || '',
+                        cell: document.getElementById('cellFournisseur')?.value || '',
+                        contact: document.getElementById('contactFournisseur')?.value || ''
+                    },
+                    // Projet
+                    projet: {
+                        nomClient: document.getElementById('nomClient')?.value || '',
+                        nomProjet: document.getElementById('nomProjet')?.value || '',
+                        lieu: document.getElementById('lieuProjet')?.value || '',
+                        refSoumission: document.getElementById('refSoumission')?.value || '',
+                        chargeProjet: document.getElementById('chargeProjet')?.value || ''
+                    },
+                    // Conditions
+                    conditions: {
+                        validite: document.getElementById('validite')?.value || '',
+                        paiement: document.getElementById('paiement')?.value || '',
+                        dateDebut: document.getElementById('dateDebut')?.value || '',
+                        dateFin: document.getElementById('dateFin')?.value || ''
+                    },
+                    // Signatures
+                    signatures: {
+                        auteur: document.getElementById('signatureAuteur')?.value || '',
+                        dateAuteur: document.getElementById('dateSignatureAuteur')?.value || '',
+                        fournisseur: document.getElementById('signatureFournisseur')?.value || '',
+                        dateFournisseur: document.getElementById('dateSignatureFournisseur')?.value || ''
+                    },
+                    // Items
+                    items: BOC.state.items,
+                    itemCounter: BOC.state.itemCounter,
+                    // Pièces jointes
+                    attachments: BOC.attachments || [],
+                    timestamp: new Date().toISOString()
+                };
+
+                return data;
+            },
+
+            // Restaurer les données
+            restoreData(data) {
+                if (!data) return;
+
+                // Numéro et date
+                if (data.numeroBon) document.getElementById('numeroBon').value = data.numeroBon;
+                if (data.dateBon) document.getElementById('dateBon').value = data.dateBon;
+
+                // Entreprise
+                if (data.entreprise) {
+                    if (data.entreprise.nom) document.getElementById('nomEntreprise').value = data.entreprise.nom;
+                    if (data.entreprise.adresse) document.getElementById('adresseEntreprise').value = data.entreprise.adresse;
+                    if (data.entreprise.ville) document.getElementById('villeEntreprise').value = data.entreprise.ville;
+                    if (data.entreprise.tel) document.getElementById('telEntreprise').value = data.entreprise.tel;
+                    if (data.entreprise.cell) document.getElementById('cellEntreprise').value = data.entreprise.cell;
+                    if (data.entreprise.email) document.getElementById('emailEntreprise').value = data.entreprise.email;
+                    if (data.entreprise.rbq) document.getElementById('rbqEntreprise').value = data.entreprise.rbq;
+                    if (data.entreprise.neq) document.getElementById('neqEntreprise').value = data.entreprise.neq;
+                }
+
+                // Fournisseur
+                if (data.fournisseur) {
+                    if (data.fournisseur.nom) document.getElementById('nomFournisseur').value = data.fournisseur.nom;
+                    if (data.fournisseur.adresse) document.getElementById('adresseFournisseur').value = data.fournisseur.adresse;
+                    if (data.fournisseur.ville) document.getElementById('villeFournisseur').value = data.fournisseur.ville;
+                    if (data.fournisseur.codePostal) document.getElementById('codePostalFournisseur').value = data.fournisseur.codePostal;
+                    if (data.fournisseur.tel) document.getElementById('telFournisseur').value = data.fournisseur.tel;
+                    if (data.fournisseur.cell) document.getElementById('cellFournisseur').value = data.fournisseur.cell;
+                    if (data.fournisseur.contact) document.getElementById('contactFournisseur').value = data.fournisseur.contact;
+                }
+
+                // Projet
+                if (data.projet) {
+                    if (data.projet.nomClient) document.getElementById('nomClient').value = data.projet.nomClient;
+                    if (data.projet.nomProjet) document.getElementById('nomProjet').value = data.projet.nomProjet;
+                    if (data.projet.lieu) document.getElementById('lieuProjet').value = data.projet.lieu;
+                    if (data.projet.refSoumission) document.getElementById('refSoumission').value = data.projet.refSoumission;
+                    if (data.projet.chargeProjet) document.getElementById('chargeProjet').value = data.projet.chargeProjet;
+                }
+
+                // Conditions
+                if (data.conditions) {
+                    if (data.conditions.validite) document.getElementById('validite').value = data.conditions.validite;
+                    if (data.conditions.paiement) document.getElementById('paiement').value = data.conditions.paiement;
+                    if (data.conditions.dateDebut) document.getElementById('dateDebut').value = data.conditions.dateDebut;
+                    if (data.conditions.dateFin) document.getElementById('dateFin').value = data.conditions.dateFin;
+                }
+
+                // Signatures
+                if (data.signatures) {
+                    if (data.signatures.auteur) document.getElementById('signatureAuteur').value = data.signatures.auteur;
+                    if (data.signatures.dateAuteur) document.getElementById('dateSignatureAuteur').value = data.signatures.dateAuteur;
+                    if (data.signatures.fournisseur) document.getElementById('signatureFournisseur').value = data.signatures.fournisseur;
+                    if (data.signatures.dateFournisseur) document.getElementById('dateSignatureFournisseur').value = data.signatures.dateFournisseur;
+                }
+
+                // Items
+                if (data.items && data.items.length > 0) {
+                    BOC.state.items = data.items;
+                    BOC.state.itemCounter = data.itemCounter || (data.items.length + 1);
+                }
+
+                // Pièces jointes
+                if (data.attachments) {
+                    BOC.attachments = data.attachments;
+                    BOC.renderAttachments();
+                }
+
+                BOC.renderItems();
+                BOC.calculateAll();
+            },
+
+            // Sauvegarder automatiquement
+            autoSave() {
+                try {
+                    const data = BOC.collectData();
+                    localStorage.setItem('boncommande_data', JSON.stringify(data));
+                    BOC.utils.showNotification('✔ Sauvegarde automatique');
+                    BOC.state.isDirty = false;
+                } catch (error) {
+                    console.error('Erreur sauvegarde:', error);
+                }
+            },
+
+            // Sauvegarder manuellement
+            saveData() {
+                try {
+                    const currentNumber = document.getElementById('numeroBon').value;
+                    const data = BOC.collectData();
+                    
+                    // Sauvegarder dans la liste
+                    const savedList = BOC.getSavedList();
+                    const index = savedList.findIndex(item => item.numeroBon === currentNumber);
+                    
+                    const saveItem = {
+                        numeroBon: currentNumber,
+                        fournisseur: data.fournisseur.nom || 'Sans nom',
+                        projet: data.projet.nomProjet || 'Sans projet',
+                        date: new Date().toISOString(),
+                        data: data
+                    };
+                    
+                    if (index !== -1) {
+                        savedList[index] = saveItem;
+                    } else {
+                        savedList.push(saveItem);
+                    }
+                    
+                    localStorage.setItem('boncommande_list', JSON.stringify(savedList));
+                    localStorage.setItem('boncommande_current', currentNumber);
+                    localStorage.setItem('boncommande_data', JSON.stringify(data));
+                    
+                    BOC.utils.showNotification('✔ Bon de commande ' + currentNumber + ' sauvegardé');
+                    BOC.state.isDirty = false;
+                } catch (error) {
+                    console.error('Erreur sauvegarde:', error);
+                    BOC.utils.showNotification('⚠️ Erreur lors de la sauvegarde', true);
+                }
+            },
+
+            // Enregistrer sous
+            saveAs() {
+                try {
+                    const nextNumber = BOC.getNextNumber();
+                    document.getElementById('numeroBon').value = nextNumber;
+                    BOC.saveData();
+                } catch (error) {
+                    console.error('Erreur saveAs:', error);
+                    BOC.utils.showNotification('⚠️ Erreur lors de l\'enregistrement', true);
+                }
+            },
+
+            // Obtenir le prochain numéro
+            getNextNumber() {
+                const savedList = BOC.getSavedList();
+                const currentYear = new Date().getFullYear();
+                
+                const yearNumbers = savedList
+                    .map(item => item.numeroBon)
+                    .filter(num => num && num.includes(currentYear.toString()))
+                    .map(num => {
+                        const match = num.match(/(\d+)$/);
+                        return match ? parseInt(match[1]) : 0;
+                    })
+                    .filter(num => !isNaN(num));
+                
+                const maxNumber = yearNumbers.length > 0 ? Math.max(...yearNumbers) : 0;
+                return `BC-${currentYear}-${String(maxNumber + 1).padStart(3, '0')}`;
+            },
+
+            // Obtenir la liste sauvegardée
+            getSavedList() {
+                try {
+                    const saved = localStorage.getItem('boncommande_list');
+                    return saved ? JSON.parse(saved) : [];
+                } catch (error) {
+                    console.error('Erreur getSavedList:', error);
+                    return [];
+                }
+            },
+
+            // Afficher la liste
+            showSavedList() {
+                try {
+                    const modal = document.getElementById('savedListModal');
+                    const content = document.getElementById('savedListContent');
+                    const savedList = BOC.getSavedList();
+                    
+                    if (savedList.length === 0) {
+                        content.innerHTML = '<div class="no-saves">Aucun bon de commande sauvegardé</div>';
+                    } else {
+                        savedList.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        
+                        let html = '<ul class="saved-list">';
+                        savedList.forEach(item => {
+                            const date = new Date(item.date);
+                            const dateStr = date.toLocaleDateString('fr-CA') + ' ' + date.toLocaleTimeString('fr-CA', {hour: '2-digit', minute: '2-digit'});
+                            
+                            html += `
+                                <li class="saved-item">
+                                    <div class="saved-item-info">
+                                        <div class="saved-item-number">Bon #${item.numeroBon}</div>
+                                        <div class="saved-item-details">
+                                            Fournisseur: ${item.fournisseur}<br>
+                                            Projet: ${item.projet}<br>
+                                            Sauvegardé: ${dateStr}
+                                        </div>
+                                    </div>
+                                    <div class="saved-item-actions">
+                                        <button class="saved-item-btn load" onclick="BOC.loadSavedItem('${item.numeroBon}')">
+                                            Charger
+                                        </button>
+                                        <button class="saved-item-btn delete" onclick="BOC.deleteSavedItem('${item.numeroBon}')">
+                                            Supprimer
+                                        </button>
+                                    </div>
+                                </li>
+                            `;
+                        });
+                        html += '</ul>';
+                        content.innerHTML = html;
+                    }
+                    
+                    modal.classList.add('show');
+                } catch (error) {
+                    console.error('Erreur showSavedList:', error);
+                    BOC.utils.showNotification('⚠️ Erreur lors de l\'affichage', true);
+                }
+            },
+
+            // Fermer la liste
+            closeSavedList() {
+                document.getElementById('savedListModal').classList.remove('show');
+            },
+
+            // Charger un bon sauvegardé
+            loadSavedItem(numeroBon) {
+                try {
+                    const savedList = BOC.getSavedList();
+                    const item = savedList.find(s => s.numeroBon === numeroBon);
+                    
+                    if (!item) {
+                        BOC.utils.showNotification('⚠️ Bon introuvable', true);
+                        return;
+                    }
+                    
+                    BOC.utils.showLoading(true);
+                    BOC.restoreData(item.data);
+                    
+                    localStorage.setItem('boncommande_current', numeroBon);
+                    localStorage.setItem('boncommande_data', JSON.stringify(item.data));
+                    
+                    BOC.closeSavedList();
+                    BOC.utils.showLoading(false);
+                    BOC.utils.showNotification('✔ Bon ' + numeroBon + ' chargé');
+                } catch (error) {
+                    console.error('Erreur loadSavedItem:', error);
+                    BOC.utils.showNotification('⚠️ Erreur lors du chargement', true);
+                    BOC.utils.showLoading(false);
+                }
+            },
+
+            // Supprimer un bon
+            deleteSavedItem(numeroBon) {
+                if (!confirm(`Êtes-vous sûr de vouloir supprimer le bon ${numeroBon} ?`)) {
+                    return;
+                }
+                
+                try {
+                    let savedList = BOC.getSavedList();
+                    savedList = savedList.filter(item => item.numeroBon !== numeroBon);
+                    
+                    localStorage.setItem('boncommande_list', JSON.stringify(savedList));
+                    
+                    const current = localStorage.getItem('boncommande_current');
+                    if (current === numeroBon) {
+                        localStorage.removeItem('boncommande_current');
+                    }
+                    
+                    BOC.showSavedList();
+                    BOC.utils.showNotification('✔ Bon supprimé');
+                } catch (error) {
+                    console.error('Erreur deleteSavedItem:', error);
+                    BOC.utils.showNotification('⚠️ Erreur lors de la suppression', true);
+                }
+            },
+
+            // Charger les données
+            loadData() {
+                try {
+                    // Date du jour
+                    document.getElementById('dateBon').value = new Date().toISOString().split('T')[0];
+                    
+                    // Vérifier s'il y a un bon courant
+                    const currentNumber = localStorage.getItem('boncommande_current');
+                    
+                    if (currentNumber) {
+                        const savedList = BOC.getSavedList();
+                        const item = savedList.find(s => s.numeroBon === currentNumber);
+                        
+                        if (item && item.data) {
+                            BOC.restoreData(item.data);
+                            return;
+                        }
+                    }
+                    
+                    // Sinon, essayer l'ancienne méthode
+                    const savedData = localStorage.getItem('boncommande_data');
+                    
+                    if (savedData) {
+                        const data = JSON.parse(savedData);
+                        BOC.restoreData(data);
+                    }
+                } catch (error) {
+                    console.error('Erreur loadData:', error);
+                }
+            },
+
+            // Réinitialiser tout
+            resetAll() {
+                if (!confirm('Êtes-vous sûr de vouloir réinitialiser tous les champs?\n\nCette action est irréversible!')) {
+                    return;
+                }
+                
+                try {
+                    BOC.utils.showLoading(true);
+                    
+                    // Réinitialiser les items
+                    BOC.state.items = [];
+                    BOC.state.itemCounter = 1;
+                    BOC.addItem();
+                    
+                    // Réinitialiser les champs
+                    const fields = [
+                        'nomFournisseur', 'adresseFournisseur', 'villeFournisseur', 
+                        'codePostalFournisseur', 'telFournisseur', 'cellFournisseur', 
+                        'contactFournisseur', 'nomClient', 'nomProjet', 'lieuProjet', 
+                        'refSoumission', 'chargeProjet', 'signatureAuteur', 
+                        'dateSignatureAuteur', 'signatureFournisseur', 'dateSignatureFournisseur'
+                    ];
+                    
+                    fields.forEach(field => {
+                        const el = document.getElementById(field);
+                        if (el) el.value = '';
+                    });
+                    
+                    // Réinitialiser les conditions
+                    document.getElementById('validite').value = '30 jours';
+                    document.getElementById('paiement').value = 'Net 30 jours';
+                    document.getElementById('dateDebut').value = '';
+                    document.getElementById('dateFin').value = '';
+                    
+                    // Réinitialiser le numéro et la date
+                    document.getElementById('numeroBon').value = 'BC-2025-001';
+                    document.getElementById('dateBon').value = new Date().toISOString().split('T')[0];
+                    
+                    // Réinitialiser les pièces jointes
+                    BOC.attachments = [];
+                    BOC.renderAttachments();
+                    
+                    // Supprimer du localStorage
+                    localStorage.removeItem('boncommande_data');
+                    
+                    BOC.calculateAll();
+                    BOC.utils.showLoading(false);
+                    BOC.utils.showNotification('✔ Réinitialisation complète');
+                } catch (error) {
+                    console.error('Erreur resetAll:', error);
+                    BOC.utils.showNotification('⚠️ Erreur lors de la réinitialisation', true);
+                    BOC.utils.showLoading(false);
+                }
+            },
+
+            // Export JSON
+            exportData() {
+                try {
+                    const data = BOC.collectData();
+                    const dataStr = JSON.stringify(data, null, 2);
+                    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                    
+                    const date = new Date().toISOString().split('T')[0];
+                    const fournisseur = document.getElementById('nomFournisseur').value || 'fournisseur';
+                    const exportFileName = `boncommande_${fournisseur}_${date}.json`.replace(/\s+/g, '_');
+                    
+                    const linkElement = document.createElement('a');
+                    linkElement.setAttribute('href', dataUri);
+                    linkElement.setAttribute('download', exportFileName);
+                    linkElement.click();
+                    
+                    BOC.utils.showNotification('✔ Données JSON exportées');
+                } catch (error) {
+                    console.error('Erreur export:', error);
+                    BOC.utils.showNotification('⚠️ Erreur lors de l\'export', true);
+                }
+            },
+
+            // Import JSON
+            importData() {
+                try {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.json';
+                    
+                    input.onchange = e => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        
+                        const reader = new FileReader();
+                        
+                        reader.onload = event => {
+                            try {
+                                BOC.utils.showLoading(true);
+                                const data = JSON.parse(event.target.result);
+                                
+                                BOC.restoreData(data);
+                                
+                                localStorage.setItem('boncommande_data', JSON.stringify(data));
+                                
+                                BOC.utils.showLoading(false);
+                                BOC.utils.showNotification('✔ Données importées avec succès');
+                            } catch (error) {
+                                console.error('Erreur import:', error);
+                                BOC.utils.showNotification('⚠️ Format de fichier invalide', true);
+                                BOC.utils.showLoading(false);
+                            }
+                        };
+                        
+                        reader.readAsText(file);
+                    };
+                    
+                    input.click();
+                } catch (error) {
+                    console.error('Erreur import:', error);
+                    BOC.utils.showNotification('⚠️ Erreur lors de l\'import', true);
+                }
+            },
+
+            // Export HTML
+            exportHTML() {
+                try {
+                    const numero = document.getElementById('numeroBon')?.value || 'BC-2025-001';
+                    const fournisseur = (document.getElementById('nomFournisseur')?.value || 'fournisseur').replace(/[^a-zA-Z0-9]/g, '');
+                    const date = new Date().toISOString().split('T')[0];
+                    const fileName = `boncommande_${numero}_${fournisseur}_${date}.html`;
+                    
+                    const fullHTML = `<!DOCTYPE html>\n${document.documentElement.outerHTML}`;
+                    
+                    const element = document.createElement('a');
+                    element.setAttribute('href', 'data:text/html;charset=utf-8,' + encodeURIComponent(fullHTML));
+                    element.setAttribute('download', fileName);
+                    element.style.display = 'none';
+                    
+                    document.body.appendChild(element);
+                    element.click();
+                    document.body.removeChild(element);
+                    
+                    BOC.utils.showNotification(`✔ Fichier exporté: ${fileName}`);
+                } catch (error) {
+                    console.error('Erreur export HTML:', error);
+                    BOC.utils.showNotification('⚠️ Erreur lors de l\'export HTML', true);
+                }
+            },
+
+            // Gestion des pièces jointes
+            attachments: [],
+            
+            handleFileSelect(event) {
+                const files = event.target.files;
+                BOC.processFiles(files);
+            },
+            
+            processFiles(files) {
+                Array.from(files).forEach(file => {
+                    if (file.size > 10 * 1024 * 1024) {
+                        BOC.utils.showNotification(`⚠️ ${file.name} est trop volumineux (max 10MB)`, true);
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const attachment = {
+                            id: Date.now() + Math.random(),
+                            name: file.name,
+                            size: file.size,
+                            type: file.type,
+                            data: e.target.result,
+                            addedDate: new Date().toISOString()
+                        };
+                        
+                        BOC.attachments.push(attachment);
+                        BOC.renderAttachments();
+                        BOC.state.isDirty = true;
+                        BOC.utils.showNotification(`✔ ${file.name} ajouté`);
+                    };
+                    
+                    reader.readAsDataURL(file);
+                });
+                
+                event.target.value = '';
+            },
+            
+            renderAttachments() {
+                const list = document.getElementById('attachmentsList');
+                if (!list) return;
+                
+                if (BOC.attachments.length === 0) {
+                    list.innerHTML = '<div style="text-align: center; color: #999; padding: 20px; font-size: 11px;">Aucun fichier joint</div>';
+                    return;
+                }
+                
+                list.innerHTML = BOC.attachments.map(att => {
+                    const icon = BOC.getFileIcon(att.name);
+                    const size = BOC.formatFileSize(att.size);
+                    
+                    return `
+                        <div class="attachment-item" style="display: flex; align-items: center; padding: 10px; background: white; border: 1px solid #e5e7eb; border-radius: 4px; margin-bottom: 8px;">
+                            <div style="font-size: 24px; margin-right: 10px;">${icon}</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 11px;">${att.name}</div>
+                                <div style="font-size: 9px; color: #666;">${size}</div>
+                            </div>
+                            <button class="action-btn remove" onclick="BOC.removeAttachment('${att.id}')" style="margin-left: 10px;">×</button>
+                        </div>
+                    `;
+                }).join('');
+            },
+            
+            getFileIcon(filename) {
+                const ext = filename.split('.').pop().toLowerCase();
+                const icons = {
+                    pdf: '📄',
+                    doc: '📝', docx: '📝',
+                    xls: '📊', xlsx: '📊',
+                    jpg: '🖼️', jpeg: '🖼️', png: '🖼️',
+                    txt: '📃'
+                };
+                return icons[ext] || '📎';
+            },
+            
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+            },
+            
+            removeAttachment(id) {
+                if (confirm('Êtes-vous sûr de vouloir retirer ce fichier?')) {
+                    BOC.attachments = BOC.attachments.filter(a => a.id != id);
+                    BOC.renderAttachments();
+                    BOC.state.isDirty = true;
+                    BOC.utils.showNotification('✔ Fichier retiré');
+                }
+            }
+        };
+
+        // Initialisation au chargement
+        document.addEventListener('DOMContentLoaded', () => {
+            BOC.init();
+        });
+
+        // Exposition globale
+        window.BOC = BOC;
+    </script>
+</body>
+</html>

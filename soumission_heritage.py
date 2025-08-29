@@ -987,49 +987,54 @@ def create_soumission_form():
         """)
 
 def generate_numero_soumission():
-    """Génère un numéro de soumission unique"""
-    year = datetime.now().year
-    # Créer le dossier data s'il n'existe pas
-    os.makedirs('data', exist_ok=True)
-    # Obtenir le dernier numéro de soumissions_heritage
-    conn_heritage = sqlite3.connect('data/soumissions_heritage.db')
-    cursor_heritage = conn_heritage.cursor()
-    cursor_heritage.execute('''
-        CREATE TABLE IF NOT EXISTS soumissions_heritage (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            numero TEXT UNIQUE,
-            data TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    cursor_heritage.execute(f"SELECT numero FROM soumissions_heritage WHERE numero LIKE '{year}-%' ORDER BY numero DESC LIMIT 1")
-    heritage_result = cursor_heritage.fetchone()
-    conn_heritage.close()
-    
-    # Obtenir le dernier numéro de soumissions_multi pour éviter les doublons
-    max_num = 0
-    
+    """Génère un numéro de soumission unique en utilisant le gestionnaire unifié"""
     try:
-        conn_multi = sqlite3.connect('data/soumissions_multi.db')
-        cursor_multi = conn_multi.cursor()
-        cursor_multi.execute(f"SELECT numero_soumission FROM soumissions WHERE numero_soumission LIKE '{year}-%' ORDER BY numero_soumission DESC LIMIT 1")
-        multi_result = cursor_multi.fetchone()
-        conn_multi.close()
+        from numero_manager import get_safe_unique_number
+        return get_safe_unique_number()
+    except ImportError:
+        # Fallback sur l'ancienne méthode si le module n'est pas disponible
+        year = datetime.now().year
+        # Créer le dossier data s'il n'existe pas
+        os.makedirs('data', exist_ok=True)
+        # Obtenir le dernier numéro de soumissions_heritage
+        conn_heritage = sqlite3.connect('data/soumissions_heritage.db')
+        cursor_heritage = conn_heritage.cursor()
+        cursor_heritage.execute('''
+            CREATE TABLE IF NOT EXISTS soumissions_heritage (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                numero TEXT UNIQUE,
+                data TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor_heritage.execute(f"SELECT numero FROM soumissions_heritage WHERE numero LIKE '{year}-%' ORDER BY numero DESC LIMIT 1")
+        heritage_result = cursor_heritage.fetchone()
+        conn_heritage.close()
         
-        if multi_result:
+        # Obtenir le dernier numéro de soumissions_multi pour éviter les doublons
+        max_num = 0
+        
+        try:
+            conn_multi = sqlite3.connect('data/soumissions_multi.db')
+            cursor_multi = conn_multi.cursor()
+            cursor_multi.execute(f"SELECT numero_soumission FROM soumissions WHERE numero_soumission LIKE '{year}-%' ORDER BY numero_soumission DESC LIMIT 1")
+            multi_result = cursor_multi.fetchone()
+            conn_multi.close()
+            
+            if multi_result:
+                # Extraire le numéro
+                multi_num = int(multi_result[0].split('-')[1])
+                max_num = max(max_num, multi_num)
+        except:
+            pass
+        
+        if heritage_result:
             # Extraire le numéro
-            multi_num = int(multi_result[0].split('-')[1])
-            max_num = max(max_num, multi_num)
-    except:
-        pass
-    
-    if heritage_result:
-        # Extraire le numéro
-        heritage_num = int(heritage_result[0].split('-')[1])
-        max_num = max(max_num, heritage_num)
-    
-    # Retourner le prochain numéro disponible
-    return f"{year}-{str(max_num + 1).zfill(3)}"
+            heritage_num = int(heritage_result[0].split('-')[1])
+            max_num = max(max_num, heritage_num)
+        
+        # Retourner le prochain numéro disponible
+        return f"{year}-{str(max_num + 1).zfill(3)}"
 
 def save_soumission():
     """Sauvegarde la soumission dans la base de données"""

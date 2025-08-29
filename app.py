@@ -12,6 +12,23 @@ import shutil
 from io import BytesIO
 import re
 
+# Import du module de bons de commande
+try:
+    from bon_commande import (
+        init_bon_commande_db,
+        generer_numero_bon,
+        sauvegarder_bon_commande,
+        charger_bon_commande,
+        lister_bons_commande,
+        supprimer_bon_commande,
+        generer_html_bon_commande,
+        dupliquer_bon_commande
+    )
+    BON_COMMANDE_AVAILABLE = True
+except ImportError:
+    BON_COMMANDE_AVAILABLE = False
+    print("Module bon_commande non disponible")
+
 # Import du module de compatibilité
 try:
     from streamlit_compat import rerun, clear_cache, show_html, get_query_params, set_query_params
@@ -281,33 +298,38 @@ def extract_info_from_html(html_content):
     return nom_client, nom_projet, montant
 
 def get_next_submission_number():
-    """Génère le prochain numéro de soumission"""
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    
-    current_year = datetime.now().year
-    
-    cursor.execute('''
-        SELECT numero_soumission 
-        FROM soumissions 
-        WHERE numero_soumission LIKE ? 
-        ORDER BY id DESC 
-        LIMIT 1
-    ''', (f'{current_year}-%',))
-    
-    result = cursor.fetchone()
-    conn.close()
-    
-    if result and result[0]:
-        try:
-            last_number = int(result[0].split('-')[1])
-            next_number = last_number + 1
-        except:
+    """Génère le prochain numéro de soumission en utilisant le gestionnaire unifié"""
+    try:
+        from numero_manager import get_safe_unique_number
+        return get_safe_unique_number()
+    except ImportError:
+        # Fallback sur l'ancienne méthode si le module n'est pas disponible
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        
+        current_year = datetime.now().year
+        
+        cursor.execute('''
+            SELECT numero_soumission 
+            FROM soumissions 
+            WHERE numero_soumission LIKE ? 
+            ORDER BY id DESC 
+            LIMIT 1
+        ''', (f'{current_year}-%',))
+        
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result and result[0]:
+            try:
+                last_number = int(result[0].split('-')[1])
+                next_number = last_number + 1
+            except:
+                next_number = 1
+        else:
             next_number = 1
-    else:
-        next_number = 1
-    
-    return f"{current_year}-{next_number:03d}"
+        
+        return f"{current_year}-{next_number:03d}"
 
 def generate_token():
     """Génère un token unique"""
@@ -1594,6 +1616,288 @@ def delete_submission(submission_id, is_heritage=False):
         st.error(f"Erreur lors de la suppression: {e}")
         return False
 
+def show_bon_commande_interface():
+    """Interface complète de gestion des bons de commande"""
+    if not BON_COMMANDE_AVAILABLE:
+        st.error("❌ Module de bon de commande non disponible")
+        return
+    
+    st.title("📋 Système de Gestion des Bons de Commande")
+    
+    # Initialiser la base de données
+    init_bon_commande_db()
+    
+    # Onglets pour les différentes fonctions
+    tab1, tab2, tab3 = st.tabs(["📝 Nouveau Bon", "📋 Gestionnaire", "📊 Liste des Bons"])
+    
+    with tab1:
+        show_nouveau_bon_commande()
+    
+    with tab2:
+        show_gestionnaire_bons()
+    
+    with tab3:
+        show_liste_bons_commande()
+
+def show_nouveau_bon_commande():
+    """Interface pour créer un nouveau bon de commande"""
+    st.subheader("📝 Nouveau Bon de Commande")
+    
+    # Générer automatiquement un numéro de bon
+    nouveau_numero = generer_numero_bon()
+    st.info(f"📋 Numéro de bon : **{nouveau_numero}**")
+    
+    # Afficher le template HTML interactif dans une iframe
+    try:
+        # Créer les données par défaut pour un nouveau bon
+        default_data = {
+            'numeroBon': nouveau_numero,
+            'dateBon': datetime.now().strftime('%Y-%m-%d'),
+            'entreprise': {},
+            'fournisseur': {
+                'nom': '', 'adresse': '', 'ville': '', 'codePostal': '',
+                'tel': '', 'cell': '', 'contact': ''
+            },
+            'projet': {
+                'nomClient': '', 'nomProjet': '', 'lieu': '',
+                'refSoumission': '', 'chargeProjet': ''
+            },
+            'conditions': {
+                'validite': '30 jours', 'paiement': 'Net 30 jours',
+                'dateDebut': '', 'dateFin': ''
+            },
+            'signatures': {
+                'auteur': '', 'dateAuteur': '',
+                'fournisseur': '', 'dateFournisseur': ''
+            },
+            'items': [{
+                'id': 1, 'number': 1, 'title': '', 'description': '',
+                'quantity': 1, 'unit': 'unité', 'unitPrice': 0, 'total': 0
+            }],
+            'attachments': []
+        }
+        
+        # Générer le HTML avec les données par défaut
+        html_content = generer_html_bon_commande(default_data)
+        
+        if html_content:
+            show_html(html_content, height=800, scrolling=True)
+        else:
+            st.error("Erreur lors de la génération du bon de commande")
+    except Exception as e:
+        st.error(f"Erreur : {str(e)}")
+        st.info("Vérifiez que le fichier bon-commande-moderne.html existe dans le répertoire du projet.")
+
+def show_gestionnaire_bons():
+    """Interface de gestion des bons de commande existants"""
+    st.subheader("📋 Gestionnaire de Bons de Commande")
+    
+    # Liste des bons existants pour sélection
+    bons_list = lister_bons_commande()
+    
+    if not bons_list:
+        st.info("Aucun bon de commande trouvé. Créez votre premier bon dans l'onglet 'Nouveau Bon'.")
+        return
+    
+    # Sélecteur de bon
+    bon_options = {f"{bon['numero_bon']} - {bon['fournisseur_nom'] or 'Sans nom'} ({bon['date_creation'][:10]})": bon['numero_bon'] 
+                   for bon in bons_list}
+    
+    selected_display = st.selectbox("Choisir un bon de commande", list(bon_options.keys()))
+    
+    if selected_display:
+        selected_numero = bon_options[selected_display]
+        
+        # Boutons d'action
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            if st.button("👁️ Visualiser"):
+                st.session_state['bc_view'] = selected_numero
+                
+        with col2:
+            if st.button("✏️ Modifier"):
+                st.session_state['bc_edit'] = selected_numero
+                
+        with col3:
+            if st.button("📋 Dupliquer"):
+                nouveau_numero = dupliquer_bon_commande(selected_numero)
+                if nouveau_numero:
+                    st.success(f"✅ Bon dupliqué ! Nouveau numéro : {nouveau_numero}")
+                    st.balloons()
+                else:
+                    st.error("❌ Erreur lors de la duplication")
+                
+        with col4:
+            if st.button("🗑️ Supprimer", type="secondary"):
+                st.session_state['bc_delete'] = selected_numero
+        
+        # Gestion de l'affichage
+        if 'bc_view' in st.session_state:
+            show_bon_commande_viewer(st.session_state['bc_view'])
+            
+        elif 'bc_edit' in st.session_state:
+            show_bon_commande_editor(st.session_state['bc_edit'])
+            
+        elif 'bc_delete' in st.session_state:
+            show_bon_commande_delete_confirm(st.session_state['bc_delete'])
+
+def show_bon_commande_viewer(numero_bon):
+    """Affiche un bon de commande en mode lecture seule"""
+    st.divider()
+    st.subheader(f"👁️ Visualisation du Bon {numero_bon}")
+    
+    if st.button("🔙 Retour à la liste"):
+        del st.session_state['bc_view']
+        rerun()
+    
+    # Charger les données du bon
+    data = charger_bon_commande(numero_bon)
+    
+    if data:
+        # Générer le HTML avec les données
+        html_content = generer_html_bon_commande(data)
+        
+        if html_content:
+            show_html(html_content, height=800, scrolling=True)
+        else:
+            st.error("Erreur lors de la génération du HTML")
+    else:
+        st.error("❌ Bon de commande non trouvé")
+
+def show_bon_commande_editor(numero_bon):
+    """Affiche un bon de commande en mode édition"""
+    st.divider()
+    st.subheader(f"✏️ Modification du Bon {numero_bon}")
+    
+    if st.button("🔙 Retour à la liste"):
+        del st.session_state['bc_edit']
+        rerun()
+    
+    # Charger les données du bon
+    data = charger_bon_commande(numero_bon)
+    
+    if data:
+        # Générer le HTML avec les données (le HTML est interactif)
+        html_content = generer_html_bon_commande(data)
+        
+        if html_content:
+            show_html(html_content, height=800, scrolling=True)
+            
+            st.info("💡 Le bon de commande ci-dessus est interactif. Vous pouvez le modifier directement et utiliser les boutons de sauvegarde intégrés.")
+        else:
+            st.error("Erreur lors de la génération du HTML")
+    else:
+        st.error("❌ Bon de commande non trouvé")
+
+def show_bon_commande_delete_confirm(numero_bon):
+    """Confirmation de suppression d'un bon de commande"""
+    st.divider()
+    st.warning(f"⚠️ Êtes-vous sûr de vouloir supprimer le bon de commande **{numero_bon}** ?")
+    st.error("Cette action est irréversible !")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("✅ Oui, supprimer", type="primary"):
+            if supprimer_bon_commande(numero_bon):
+                st.success(f"✅ Bon {numero_bon} supprimé avec succès !")
+                del st.session_state['bc_delete']
+                import time
+                time.sleep(2)
+                rerun()
+            else:
+                st.error("❌ Erreur lors de la suppression")
+    
+    with col2:
+        if st.button("❌ Annuler"):
+            del st.session_state['bc_delete']
+            rerun()
+
+def show_liste_bons_commande():
+    """Affiche la liste de tous les bons de commande avec statistiques"""
+    st.subheader("📊 Liste des Bons de Commande")
+    
+    bons_list = lister_bons_commande()
+    
+    if not bons_list:
+        st.info("Aucun bon de commande trouvé.")
+        return
+    
+    # Statistiques
+    total_bons = len(bons_list)
+    total_montant = sum(bon.get('total', 0) for bon in bons_list)
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("📋 Total Bons", total_bons)
+    
+    with col2:
+        st.metric("💰 Montant Total", f"${total_montant:,.2f}")
+    
+    with col3:
+        # Compter par statut si disponible
+        brouillons = len([b for b in bons_list if b.get('statut') == 'brouillon'])
+        st.metric("📝 Brouillons", brouillons)
+    
+    with col4:
+        # Bons du mois courant
+        from datetime import datetime
+        mois_courant = datetime.now().strftime('%Y-%m')
+        bons_mois = len([b for b in bons_list if b.get('date_creation', '').startswith(mois_courant)])
+        st.metric("📅 Ce mois", bons_mois)
+    
+    st.divider()
+    
+    # Table des bons
+    st.subheader("📋 Liste détaillée")
+    
+    # Filtres
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        search = st.text_input("🔍 Rechercher", placeholder="Numéro, fournisseur, projet...")
+    
+    # Filtrer les résultats
+    filtered_bons = bons_list
+    if search:
+        search = search.lower()
+        filtered_bons = [
+            bon for bon in bons_list
+            if search in bon.get('numero_bon', '').lower() or 
+               search in bon.get('fournisseur_nom', '').lower() or 
+               search in bon.get('projet_nom', '').lower()
+        ]
+    
+    # Affichage des bons
+    for bon in filtered_bons:
+        with st.expander(f"📋 **{bon['numero_bon']}** - {bon.get('fournisseur_nom') or 'Sans nom'} (${bon.get('total', 0):,.2f})"):
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.write(f"**Fournisseur:** {bon.get('fournisseur_nom') or 'N/A'}")
+                st.write(f"**Client:** {bon.get('client_nom') or 'N/A'}")
+                st.write(f"**Projet:** {bon.get('projet_nom') or 'N/A'}")
+            
+            with col2:
+                st.write(f"**Date création:** {bon.get('date_creation', 'N/A')[:10]}")
+                st.write(f"**Dernière modif:** {bon.get('derniere_modification', 'N/A')[:10]}")
+                st.write(f"**Statut:** {bon.get('statut', 'N/A').title()}")
+            
+            with col3:
+                st.write(f"**Montant:** ${bon.get('total', 0):,.2f}")
+                
+                # Boutons d'action
+                col_btn1, col_btn2 = st.columns(2)
+                with col_btn1:
+                    if st.button(f"👁️ Voir", key=f"view_{bon['numero_bon']}"):
+                        st.session_state['bc_view'] = bon['numero_bon']
+                        rerun()
+                with col_btn2:
+                    if st.button(f"✏️ Modifier", key=f"edit_{bon['numero_bon']}"):
+                        st.session_state['bc_edit'] = bon['numero_bon']
+                        rerun()
+
 def show_admin_dashboard():
     """Dashboard administrateur multi-format"""
     # Import du module de configuration d'entreprise
@@ -1634,67 +1938,136 @@ def show_admin_dashboard():
     else:
         # Tabs principaux - bien visibles avec Entreprise en premier
         if has_entreprise_config:
-            tab1, tab2, tab3, tab4, tab5 = st.tabs([
-                "🏢 **ENTREPRISE**",
-                "📊 **TABLEAU DE BORD**", 
-                "➕ **CRÉER SOUMISSION HÉRITAGE**", 
-                "📤 **UPLOADER DOCUMENT**",
-                "💾 **SAUVEGARDES**"
-            ])
+            if BON_COMMANDE_AVAILABLE:
+                tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+                    "🏢 **ENTREPRISE**",
+                    "📋 **BONS DE COMMANDE**",
+                    "📊 **TABLEAU DE BORD**", 
+                    "➕ **CRÉER SOUMISSION HÉRITAGE**", 
+                    "📤 **UPLOADER DOCUMENT**",
+                    "💾 **SAUVEGARDES**"
+                ])
+            else:
+                tab1, tab2, tab3, tab4, tab5 = st.tabs([
+                    "🏢 **ENTREPRISE**",
+                    "📊 **TABLEAU DE BORD**", 
+                    "➕ **CRÉER SOUMISSION HÉRITAGE**", 
+                    "📤 **UPLOADER DOCUMENT**",
+                    "💾 **SAUVEGARDES**"
+                ])
         else:
-            tab1, tab2, tab3, tab4 = st.tabs([
-                "📊 **TABLEAU DE BORD**", 
-                "➕ **CRÉER SOUMISSION HÉRITAGE**", 
-                "📤 **UPLOADER DOCUMENT**",
-                "💾 **SAUVEGARDES**"
-            ])
+            if BON_COMMANDE_AVAILABLE:
+                tab1, tab2, tab3, tab4, tab5 = st.tabs([
+                    "📋 **BONS DE COMMANDE**",
+                    "📊 **TABLEAU DE BORD**", 
+                    "➕ **CRÉER SOUMISSION HÉRITAGE**", 
+                    "📤 **UPLOADER DOCUMENT**",
+                    "💾 **SAUVEGARDES**"
+                ])
+            else:
+                tab1, tab2, tab3, tab4 = st.tabs([
+                    "📊 **TABLEAU DE BORD**", 
+                    "➕ **CRÉER SOUMISSION HÉRITAGE**", 
+                    "📤 **UPLOADER DOCUMENT**",
+                    "💾 **SAUVEGARDES**"
+                ])
         
         if has_entreprise_config:
             with tab1:
                 # Afficher la configuration de l'entreprise
                 show_entreprise_config()
             
-            with tab2:
-                show_dashboard_content()
-            
-            with tab3:
-                # Importer et afficher le module de création de soumission
-                try:
-                    from soumission_heritage import show_soumission_heritage
-                    show_soumission_heritage()
-                except Exception as e:
-                    st.error(f"Erreur chargement module Heritage: {e}")
-                    import traceback
-                    st.code(traceback.format_exc())
-            
-            with tab4:
-                show_upload_section()
-            
-            with tab5:
-                # Onglet de sauvegarde
-                import backup_manager
-                backup_manager.show_backup_interface()
+            if BON_COMMANDE_AVAILABLE:
+                with tab2:
+                    show_bon_commande_interface()
+                
+                with tab3:
+                    show_dashboard_content()
+                
+                with tab4:
+                    # Importer et afficher le module de création de soumission
+                    try:
+                        from soumission_heritage import show_soumission_heritage
+                        show_soumission_heritage()
+                    except Exception as e:
+                        st.error(f"Erreur chargement module Heritage: {e}")
+                        import traceback
+                        st.code(traceback.format_exc())
+                
+                with tab5:
+                    show_upload_section()
+                
+                with tab6:
+                    # Onglet de sauvegarde
+                    import backup_manager
+                    backup_manager.show_backup_interface()
+            else:
+                with tab2:
+                    show_dashboard_content()
+                
+                with tab3:
+                    # Importer et afficher le module de création de soumission
+                    try:
+                        from soumission_heritage import show_soumission_heritage
+                        show_soumission_heritage()
+                    except Exception as e:
+                        st.error(f"Erreur chargement module Heritage: {e}")
+                        import traceback
+                        st.code(traceback.format_exc())
+                
+                with tab4:
+                    show_upload_section()
+                
+                with tab5:
+                    # Onglet de sauvegarde
+                    import backup_manager
+                    backup_manager.show_backup_interface()
         else:
-            with tab1:
-                show_dashboard_content()
-            
-            with tab2:
-                # Importer et afficher le module de création de soumission
-                try:
-                    from soumission_heritage import show_soumission_heritage
-                    show_soumission_heritage()
-                except Exception as e:
-                    st.error(f"Erreur chargement module Heritage: {e}")
-                    import traceback
-                    st.code(traceback.format_exc())
-            
-            with tab3:
-                show_upload_section()
-            
-            with tab4:
-                # Onglet de sauvegarde
-                import backup_manager
-                backup_manager.show_backup_interface()
+            if BON_COMMANDE_AVAILABLE:
+                with tab1:
+                    show_bon_commande_interface()
+                
+                with tab2:
+                    show_dashboard_content()
+                
+                with tab3:
+                    # Importer et afficher le module de création de soumission
+                    try:
+                        from soumission_heritage import show_soumission_heritage
+                        show_soumission_heritage()
+                    except Exception as e:
+                        st.error(f"Erreur chargement module Heritage: {e}")
+                        import traceback
+                        st.code(traceback.format_exc())
+                
+                with tab4:
+                    show_upload_section()
+                
+                with tab5:
+                    # Onglet de sauvegarde
+                    import backup_manager
+                    backup_manager.show_backup_interface()
+            else:
+                with tab1:
+                    show_dashboard_content()
+                
+                with tab2:
+                    # Importer et afficher le module de création de soumission
+                    try:
+                        from soumission_heritage import show_soumission_heritage
+                        show_soumission_heritage()
+                    except Exception as e:
+                        st.error(f"Erreur chargement module Heritage: {e}")
+                        import traceback
+                        st.code(traceback.format_exc())
+                
+                with tab3:
+                    show_upload_section()
+                
+                with tab4:
+                    # Onglet de sauvegarde
+                    import backup_manager
+                    backup_manager.show_backup_interface()
 
 def show_upload_section():
     """Section d'upload de documents"""
