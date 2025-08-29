@@ -394,7 +394,8 @@ def save_submission_multi(numero, nom_client, email_client, tel_client, nom_proj
     return submission_id, token, lien
 
 def get_submission_by_token(token):
-    """Récupère une soumission par son token"""
+    """Récupère une soumission par son token (Multi-format ET Heritage)"""
+    # Chercher d'abord dans Multi-format
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
     
@@ -411,14 +412,65 @@ def get_submission_by_token(token):
                   'date_creation', 'date_envoi', 'date_decision',
                   'commentaire_client', 'ip_client', 'lien_public', 'metadata']
         return dict(zip(columns, row))
+    
+    # Si pas trouvé, chercher dans Heritage
+    try:
+        conn_heritage = sqlite3.connect('data/soumissions_heritage.db')
+        cursor_heritage = conn_heritage.cursor()
+        
+        cursor_heritage.execute('''
+            SELECT id, numero, client_nom, projet_nom, montant_total, 
+                   statut, token, data, created_at, lien_public
+            FROM soumissions_heritage 
+            WHERE token = ?
+        ''', (token,))
+        
+        row_heritage = cursor_heritage.fetchone()
+        conn_heritage.close()
+        
+        if row_heritage:
+            # Convertir en format compatible avec Multi-format
+            import json
+            data = json.loads(row_heritage[7]) if row_heritage[7] else {}
+            
+            return {
+                'id': row_heritage[0],
+                'numero_soumission': row_heritage[1],
+                'nom_client': row_heritage[2],
+                'email_client': data.get('client', {}).get('courriel', ''),
+                'telephone_client': data.get('client', {}).get('telephone', ''),
+                'nom_projet': row_heritage[3],
+                'montant_total': row_heritage[4],
+                'file_type': 'heritage',
+                'file_name': f'Soumission_{row_heritage[1]}.html',
+                'file_path': None,
+                'file_size': 0,
+                'file_data': None,
+                'html_preview': None,
+                'token': row_heritage[6],
+                'statut': row_heritage[5],
+                'date_creation': row_heritage[8],
+                'date_envoi': None,
+                'date_decision': None,
+                'commentaire_client': None,
+                'ip_client': None,
+                'lien_public': row_heritage[9],
+                'metadata': row_heritage[7],
+                'is_heritage': True  # Marqueur pour identifier Heritage
+            }
+    except Exception as e:
+        print(f"Erreur recherche Heritage: {e}")
+    
     return None
 
 def update_submission_status(token, statut, commentaire=None):
-    """Met à jour le statut d'une soumission"""
+    """Met à jour le statut d'une soumission (Multi-format ET Heritage)"""
+    date_decision = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    updated = False
+    
+    # Essayer d'abord dans Multi-format
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
-    
-    date_decision = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
     cursor.execute('''
         UPDATE soumissions 
@@ -426,8 +478,29 @@ def update_submission_status(token, statut, commentaire=None):
         WHERE token = ?
     ''', (statut, date_decision, commentaire, token))
     
+    if cursor.rowcount > 0:
+        updated = True
+    
     conn.commit()
     conn.close()
+    
+    # Si pas trouvé dans Multi-format, essayer Heritage
+    if not updated:
+        try:
+            conn_heritage = sqlite3.connect('data/soumissions_heritage.db')
+            cursor_heritage = conn_heritage.cursor()
+            
+            # Heritage n'a pas les mêmes colonnes, adapter
+            cursor_heritage.execute('''
+                UPDATE soumissions_heritage 
+                SET statut = ?, updated_at = ?
+                WHERE token = ?
+            ''', (statut, date_decision, token))
+            
+            conn_heritage.commit()
+            conn_heritage.close()
+        except Exception as e:
+            print(f"Erreur mise à jour Heritage: {e}")
 
 def get_all_submissions():
     """Récupère toutes les soumissions des deux tables"""
@@ -838,16 +911,28 @@ def create_approval_page(submission):
     </style>
     """
     
-    # Déterminer l'icône selon le type de fichier
-    file_icons = {
-        '.pdf': '📄',
-        '.doc': '📝', '.docx': '📝',
-        '.xls': '📊', '.xlsx': '📊',
-        '.ppt': '📑', '.pptx': '📑',
-        '.jpg': '🖼️', '.jpeg': '🖼️', '.png': '🖼️',
-        '.html': '🌐', '.htm': '🌐'
-    }
-    file_icon = file_icons.get(submission['file_type'], '📎')
+    # Gérer les soumissions Heritage différemment
+    is_heritage = submission.get('is_heritage', False) or submission.get('file_type') == 'heritage'
+    
+    if is_heritage:
+        file_icon = '🏗️'
+        file_name = f"Soumission Heritage #{submission['numero_soumission']}"
+        file_type = "Heritage"
+        file_size_kb = 0  # Pas de taille pour Heritage
+    else:
+        # Déterminer l'icône selon le type de fichier
+        file_icons = {
+            '.pdf': '📄',
+            '.doc': '📝', '.docx': '📝',
+            '.xls': '📊', '.xlsx': '📊',
+            '.ppt': '📑', '.pptx': '📑',
+            '.jpg': '🖼️', '.jpeg': '🖼️', '.png': '🖼️',
+            '.html': '🌐', '.htm': '🌐'
+        }
+        file_icon = file_icons.get(submission.get('file_type', ''), '📎')
+        file_name = submission.get('file_name', 'Document')
+        file_type = submission.get('file_type', 'Inconnu')
+        file_size_kb = submission.get('file_size', 0) / 1024 if submission.get('file_size') else 0
     
     # Créer le HTML de la page
     html = f"""
@@ -889,15 +974,13 @@ def create_approval_page(submission):
                     <div class="file-info">
                         <div class="file-icon">{file_icon}</div>
                         <div>
-                            <div style="font-weight: 600; color: #2d3748;">{submission['file_name']}</div>
+                            <div style="font-weight: 600; color: #2d3748;">{file_name}</div>
                             <div style="color: #718096; font-size: 14px;">
-                                Type: {submission['file_type']} | Taille: {submission['file_size']/1024:.1f} KB
+                                Type: {file_type} {"" if is_heritage else f"| Taille: {file_size_kb:.1f} KB"}
                             </div>
                         </div>
                     </div>
-                    <a href="data:application/octet-stream;base64,{get_file_download_data(submission)}" download="{submission['file_name']}" class="download-btn">
-                        <i class="fas fa-download"></i> Télécharger
-                    </a>
+                    {"" if is_heritage else f'<a href="data:application/octet-stream;base64,{get_file_download_data(submission)}" download="{file_name}" class="download-btn"><i class="fas fa-download"></i> Télécharger</a>'}
                 </div>
                 
                 <div id="document-content">
@@ -978,7 +1061,45 @@ def get_file_download_data(submission):
 
 def get_document_preview(submission):
     """Génère l'aperçu du document selon son type"""
-    file_type = submission['file_type']
+    # Gérer les soumissions Heritage
+    is_heritage = submission.get('is_heritage', False) or submission.get('file_type') == 'heritage'
+    
+    if is_heritage:
+        # Pour Heritage, générer le HTML depuis les données
+        try:
+            import json
+            from soumission_heritage import generate_html_for_pdf
+            
+            # Récupérer les données depuis metadata
+            data_json = submission.get('metadata', '{}')
+            if data_json:
+                soumission_data = json.loads(data_json)
+                
+                # Reconstruire session_state temporairement
+                import streamlit as st
+                old_data = st.session_state.get('soumission_data', None)
+                st.session_state.soumission_data = soumission_data
+                
+                # Générer le HTML
+                html_content = generate_html_for_pdf()
+                
+                # Restaurer l'ancien état
+                if old_data:
+                    st.session_state.soumission_data = old_data
+                elif 'soumission_data' in st.session_state:
+                    del st.session_state.soumission_data
+                
+                # Encoder en base64 pour l'iframe
+                import base64
+                html_b64 = base64.b64encode(html_content.encode()).decode()
+                return f'<iframe src="data:text/html;base64,{html_b64}" style="width: 100%; height: 1000px; border: none;"></iframe>'
+            else:
+                return '<div class="no-preview"><h3>Données Heritage non disponibles</h3></div>'
+        except Exception as e:
+            return f'<div class="no-preview"><h3>Erreur Heritage: {str(e)}</h3></div>'
+    
+    # Code original pour les autres types
+    file_type = submission.get('file_type', '')
     token = submission['token']
     
     # Récupérer le chemin du fichier
