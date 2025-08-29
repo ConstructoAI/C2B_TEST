@@ -20,12 +20,17 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Créer les dossiers nécessaires avec les bonnes permissions
-RUN mkdir -p data files && \
-    chmod -R 777 data files
+RUN mkdir -p data files data/backups && \
+    chmod -R 777 data files data/backups
 
 # Rendre les scripts d'initialisation exécutables
 RUN chmod +x init_render.sh || true
 RUN chmod +x init_render_safe.sh || true
+RUN chmod +x startup.sh || true
+RUN chmod +x clean_disk_render.sh || true
+RUN chmod +x fix_file_paths.py || true
+RUN chmod +x fix_client_links.py || true
+RUN chmod +x token_manager.py || true
 
 # Variable d'environnement pour le port
 ENV PORT=8501
@@ -34,13 +39,11 @@ ENV PORT=8501
 EXPOSE $PORT
 
 # Commande de démarrage
-# Utilise le script sécurisé si disponible, sinon l'ancien script, sinon commande normale
-CMD if [ "$RENDER" = "true" ]; then \
-        if [ -f "./init_render_safe.sh" ]; then \
-            ./init_render_safe.sh; \
-        else \
-            ./init_render.sh; \
-        fi \
+# Utilise le nouveau script startup.sh avec protection des tokens
+CMD if [ -f "./startup.sh" ]; then \
+        ./startup.sh; \
+    elif [ "$RENDER" = "true" ] && [ -f "./init_render.sh" ]; then \
+        ./init_render.sh; \
     else \
         streamlit run app.py \
         --server.port=$PORT \
