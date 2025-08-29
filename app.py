@@ -1047,17 +1047,31 @@ def create_approval_page(submission):
 
 def get_file_download_data(submission):
     """Encode le fichier en base64 pour le téléchargement"""
-    file_path = submission.get('file_path', '')
-    if not file_path or not os.path.exists(file_path):
-        return ""
+    import base64
     
-    try:
-        import base64
-        with open(file_path, 'rb') as f:
-            file_data = f.read()
-        return base64.b64encode(file_data).decode()
-    except:
-        return ""
+    # Essayer d'abord file_data (BLOB dans la base)
+    if submission.get('file_data'):
+        try:
+            # Si file_data est déjà en bytes
+            if isinstance(submission['file_data'], bytes):
+                return base64.b64encode(submission['file_data']).decode()
+            # Si c'est déjà en base64 string
+            elif isinstance(submission['file_data'], str):
+                return submission['file_data']
+        except:
+            pass
+    
+    # Sinon essayer file_path
+    file_path = submission.get('file_path', '')
+    if file_path and os.path.exists(file_path):
+        try:
+            with open(file_path, 'rb') as f:
+                file_data = f.read()
+            return base64.b64encode(file_data).decode()
+        except:
+            pass
+    
+    return ""
 
 def get_document_preview(submission):
     """Génère l'aperçu du document selon son type"""
@@ -1102,16 +1116,41 @@ def get_document_preview(submission):
     file_type = submission.get('file_type', '')
     token = submission['token']
     
+    # Vérifier d'abord si on a file_data (BLOB)
+    has_file_data = submission.get('file_data') and len(submission.get('file_data', b'')) > 0
+    
     # Récupérer le chemin du fichier
     file_path = submission.get('file_path', '')
-    if not file_path or not os.path.exists(file_path):
-        return f"""
-            <div class="no-preview">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h3>Fichier non trouvé</h3>
-                <p>Le fichier n'a pas pu être trouvé sur le serveur.</p>
-            </div>
-        """
+    has_file_path = file_path and os.path.exists(file_path)
+    
+    # Si ni file_data ni file_path valide, afficher erreur
+    if not has_file_data and not has_file_path:
+        # Essayer de récupérer depuis la base de données
+        try:
+            conn = sqlite3.connect(DATABASE_PATH)
+            cursor = conn.cursor()
+            cursor.execute('SELECT file_data FROM soumissions WHERE token = ?', (token,))
+            result = cursor.fetchone()
+            conn.close()
+            
+            if result and result[0]:
+                submission['file_data'] = result[0]
+                has_file_data = True
+        except:
+            pass
+        
+        if not has_file_data:
+            return f"""
+                <div class="no-preview">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Fichier non trouvé</h3>
+                    <p>Le fichier n'a pas pu être trouvé sur le serveur.</p>
+                    <p style="font-size: 12px; color: #666;">
+                        Chemin testé: {file_path or 'Aucun'}<br>
+                        Données BLOB: {'Oui' if has_file_data else 'Non'}
+                    </p>
+                </div>
+            """
     
     if file_type in ['.pdf']:
         # Utiliser le module pdf_viewer pour générer l'aperçu PDF
@@ -1137,9 +1176,24 @@ def get_document_preview(submission):
         # Afficher directement les images en base64
         try:
             import base64
-            with open(file_path, 'rb') as f:
-                img_data = f.read()
-            img_b64 = base64.b64encode(img_data).decode()
+            
+            # Essayer d'abord file_data (BLOB)
+            if has_file_data:
+                img_data = submission['file_data']
+                if isinstance(img_data, str):
+                    # Si c'est déjà en base64
+                    img_b64 = img_data
+                else:
+                    # Si c'est en bytes
+                    img_b64 = base64.b64encode(img_data).decode()
+            elif has_file_path:
+                # Sinon lire depuis le fichier
+                with open(file_path, 'rb') as f:
+                    img_data = f.read()
+                img_b64 = base64.b64encode(img_data).decode()
+            else:
+                raise Exception("Aucune source de données")
+            
             mime_types = {
                 '.jpg': 'image/jpeg',
                 '.jpeg': 'image/jpeg',
